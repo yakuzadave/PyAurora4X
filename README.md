@@ -56,6 +56,14 @@ Launch the main interface with:
 python main.py
 ```
 
+You can also start a brand new game immediately with:
+
+```bash
+python main.py --new-game
+```
+
+This is useful when you want to skip loading existing saves and jump straight into a fresh session.
+
 ### Simulation Test
 
 You can run a headless simulation for quick verification:
