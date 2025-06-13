@@ -26,3 +26,19 @@ The game requires several Python packages. Install them using:
 
 ```bash
 pip install textual rich pydantic numpy tinydb
+```
+
+## Development
+
+This project uses `pre-commit` to run formatting, linting and type checks. Set it up with:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run all checks manually using:
+
+```bash
+pre-commit run --all-files
+```
