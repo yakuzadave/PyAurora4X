@@ -81,5 +81,5 @@ markdown files from both that index and this README when appropriate.
 
 ## License
 
-PyAurora 4X is released under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
 
