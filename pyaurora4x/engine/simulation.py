@@ -267,31 +267,12 @@ class GameSimulation:
         for empire in self.empires.values():
             if not empire.is_player:
                 self._process_ai_empire(empire)
-    
+
     def _process_ai_empire(self, empire: Empire) -> None:
         """Process AI decisions for a single empire."""
         logger.debug(f"Processing AI for empire: {empire.name}")
 
-    def _process_research(self, delta_seconds: float) -> None:
-        """Advance research progress for all empires."""
-        for empire in self.empires.values():
-            tech_id = empire.current_research
-            if not tech_id:
-                continue
-
-            tech = empire.technologies.get(tech_id)
-            if not tech:
-                continue
-
-            # Simple research rate: 1 RP per second
-            empire.research_points += delta_seconds
-
-            if empire.research_points >= tech.research_cost:
-                tech.is_researched = True
-                empire.current_research = None
-                empire.research_points = 0
-
-        # === Fleet Movement ===
+        # Move idle fleets to random planets in their current system
         for fleet_id in empire.fleets:
             fleet = self.fleets.get(fleet_id)
             if not fleet or fleet.status != FleetStatus.IDLE:
@@ -310,21 +291,13 @@ class GameSimulation:
                 f"{fleet.name} ordered to move to {target.name} in {system.name}"
             )
 
-        # === Research Priorities ===
-        if empire.current_research:
-            tech = empire.technologies.get(empire.current_research)
-            if tech and not tech.is_researched:
-                empire.research_points += 5.0
-                if empire.research_points >= tech.research_cost:
-                    tech.is_researched = True
-                    empire.current_research = None
-                    empire.research_points = 0.0
-                    logger.debug(f"{empire.name} completed research on {tech.name}")
+        # Start new research if none is assigned
         if not empire.current_research:
             available = [
                 t
                 for t in self.tech_manager.technologies.values()
-                if t.id not in empire.technologies or not empire.technologies[t.id].is_researched
+                if t.id not in empire.technologies
+                or not empire.technologies[t.id].is_researched
             ]
             if available:
                 chosen = random.choice(available)
@@ -332,9 +305,60 @@ class GameSimulation:
                 empire.current_research = chosen.id
                 empire.research_points = 0.0
                 empire.research_allocation = {chosen.tech_type: 100.0}
-                logger.debug(
-                    f"{empire.name} started researching {chosen.name}"
-                )
+                logger.debug(f"{empire.name} started researching {chosen.name}")
+
+    def _process_research(self, delta_seconds: float) -> None:
+        """Advance research progress for all empires."""
+        for empire in self.empires.values():
+            tech_id = empire.current_research
+            if tech_id:
+                tech = empire.technologies.get(tech_id)
+                if tech:
+                    # Simple research rate: 1 RP per second
+                    empire.research_points += delta_seconds
+
+                    if empire.research_points >= tech.research_cost:
+                        tech.is_researched = True
+                        empire.current_research = None
+                        empire.research_points = 0
+
+            if not empire.is_player:
+                # === Fleet Movement ===
+                for fleet_id in empire.fleets:
+                    fleet = self.fleets.get(fleet_id)
+                    if not fleet or fleet.status != FleetStatus.IDLE:
+                        continue
+
+                    system = self.star_systems.get(fleet.system_id)
+                    if not system or not system.planets:
+                        continue
+
+                    target = random.choice(system.planets)
+                    fleet.destination = target.position.copy()
+                    fleet.estimated_arrival = self.current_time + 3600.0
+                    fleet.current_orders.append(f"Move to {target.name}")
+                    fleet.status = FleetStatus.MOVING
+                    logger.debug(
+                        f"{fleet.name} ordered to move to {target.name} in {system.name}"
+                    )
+
+                # Auto-assign new research when none selected
+                if not empire.current_research:
+                    available = [
+                        t
+                        for t in self.tech_manager.technologies.values()
+                        if t.id not in empire.technologies
+                        or not empire.technologies[t.id].is_researched
+                    ]
+                    if available:
+                        chosen = random.choice(available)
+                        empire.technologies[chosen.id] = chosen
+                        empire.current_research = chosen.id
+                        empire.research_points = 0.0
+                        empire.research_allocation = {chosen.tech_type: 100.0}
+                        logger.debug(
+                            f"{empire.name} started researching {chosen.name}"
+                        )
 
     
     def pause(self) -> None:

@@ -337,9 +337,38 @@ class PyAurora4XApp(App):
             logger.error(f"Error saving game: {e}")
     
     def action_load_game(self) -> None:
-        """Load a game (simplified - would need file selection in full implementation)."""
+        """Load a saved game from the saves directory."""
         message_log = self.query_one("#message_log", Log)
-        message_log.write_line("Load game feature not implemented yet.")
+
+        # Get available saves using the save manager
+        saves = self.save_manager.list_saves()
+
+        if not saves:
+            message_log.write_line("No saved games found.")
+            return
+
+        # Display saves with an index
+        message_log.write_line("Available saves:")
+        for idx, meta in enumerate(saves, start=1):
+            date = meta.get("save_date", "")
+            message_log.write_line(f"  {idx}. {meta['save_name']} {date}")
+
+        try:
+            selection = input("Select save number: ").strip()
+            index = int(selection)
+            if index < 1 or index > len(saves):
+                raise ValueError
+        except Exception:
+            message_log.write_line("Invalid selection. Load cancelled.")
+            return
+
+        save_name = saves[index - 1]["save_name"]
+        try:
+            game_data = self.save_manager.load_game(save_name)
+            self.load_game_data(game_data)
+            message_log.write_line(f"Loaded save '{save_name}'.")
+        except Exception as e:
+            message_log.write_line(f"Failed to load save '{save_name}': {e}")
     
     def action_show_systems(self) -> None:
         """Show the star systems view."""
