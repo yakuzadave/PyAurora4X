@@ -285,6 +285,10 @@ class FleetPanel(Static):
             if self.current_fleet:
                 self._update_fleet_details()
 
+    def refresh(self) -> None:
+        """Refresh fleet information."""
+        self._update_display()
+
 
 class FleetCommandEvent:
     """Event for fleet commands."""
