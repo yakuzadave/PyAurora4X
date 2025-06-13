@@ -8,6 +8,7 @@ contributing additional documents.
 - [Project README](../README.md)
 - [Agent Instructions](../AGENTS.md)
 - [Documentation Overview](README.md)
+- [Design Overview](design_overview.md)
 
 ## Contributing New Documentation
 1. Place new markdown files in the `docs/` directory.

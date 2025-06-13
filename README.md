@@ -78,6 +78,8 @@ Additional markdown documents are stored in the `docs` directory.
 See [docs/README.md](docs/README.md) for an index of available files and
 guidelines on contributing new documentation. Remember to link any new
 markdown files from both that index and this README when appropriate.
+For a summary of project goals and directory layout, see
+[docs/design_overview.md](docs/design_overview.md).
 
 ## License
 
