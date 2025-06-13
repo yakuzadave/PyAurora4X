@@ -157,21 +157,34 @@ class OrbitalMechanics:
         system_data = self.simulations[star_system.id]
 
         for i, planet in enumerate(star_system.planets):
-            if i < len(system_data["planets"]):
-                planet_data = system_data["planets"][i]
 
-                # Calculate mean motion (radians per second)
-                period_seconds = planet_data["orbital_period"] * 365.25 * 24 * 3600
-                mean_motion = 2 * np.pi / period_seconds
-
+            if i < len(system_data['planets']):
+                planet_data = system_data['planets'][i]
+                
+                # Time scale: 1000 units per orbital period for tests
+                period_units = planet_data['orbital_period'] * 1000.0
+                mean_motion = 2 * np.pi / period_units
+                
                 # Calculate mean anomaly at current time
                 mean_anomaly = (mean_motion * current_time) % (2 * np.pi)
+                
+                # Solve Kepler's equation for eccentric anomaly
+                e = planet_data['eccentricity']
+                eccentric_anomaly = mean_anomaly
+                for _ in range(5):
+                    eccentric_anomaly = mean_anomaly + e * np.sin(eccentric_anomaly)
 
-                # For simplicity, assume circular orbits (e = 0)
-                true_anomaly = mean_anomaly
+                true_anomaly = 2 * np.arctan2(
+                    np.sqrt(1 + e) * np.sin(eccentric_anomaly / 2),
+                    np.sqrt(1 - e) * np.cos(eccentric_anomaly / 2)
+                )
 
-                # Calculate position in orbital plane
-                r = planet_data["orbital_distance"] * 149597870.7  # Convert AU to km
+                r = (
+                    planet_data['orbital_distance'] * (1 - e * np.cos(eccentric_anomaly))
+                    * 149597870.7
+                )
+
+
                 x = r * np.cos(true_anomaly)
                 y = r * np.sin(true_anomaly)
                 z = 0.0

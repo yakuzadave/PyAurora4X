@@ -281,3 +281,24 @@ class TestGameSimulation:
         with patch.object(sim.scheduler, "process_events") as mock_process:
             sim.advance_time(100.0)
             mock_process.assert_called_once_with(0.0, 100.0)
+
+    def test_ai_processing(self):
+        """AI empires should process without errors and take basic actions."""
+        sim = GameSimulation()
+        sim.initialize_new_game(num_systems=3, num_empires=3)
+
+        # Run AI update
+        sim._update_ai_empires()
+
+        ai_empires = [e for e in sim.empires.values() if not e.is_player]
+        assert ai_empires
+
+        for empire in ai_empires:
+            # Should have started some research
+            assert empire.current_research is not None
+
+            for fleet_id in empire.fleets:
+                fleet = sim.get_fleet(fleet_id)
+                assert fleet.status == FleetStatus.MOVING
+
+
