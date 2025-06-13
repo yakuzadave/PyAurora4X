@@ -1,8 +1,8 @@
 # Documentation
 
-This folder contains supplementary documentation for the PyAurora 4X project.
-Below is a list of the available markdown files and guidelines for
-contributing additional documents.
+This directory contains supplementary information for **PyAurora 4X**. Each
+markdown file focuses on a different topic. Use this page as the central index
+for documentation and as a guide when adding new files.
 
 ## Table of Contents
 - [Project README](../README.md)
@@ -10,10 +10,12 @@ contributing additional documents.
 - [Documentation Overview](README.md)
 - [Design Overview](design_overview.md)
 
-## Contributing New Documentation
-1. Place new markdown files in the `docs/` directory.
-2. Add a link to the file in the **Table of Contents** above.
-3. Update the main `README.md` to mention the new document when appropriate.
 
-Keeping the index current helps other contributors discover the resources
-available for learning about the project.
+## Contributing New Documentation
+
+1. Place new markdown files in the `docs/` directory.
+2. Add the file and a short description to the **Table of Contents** above.
+3. Mention the new document from the main `README.md` when relevant.
+
+Keeping the index current helps everyone discover the resources available for
+learning about the project.

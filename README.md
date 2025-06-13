@@ -93,12 +93,19 @@ The hooks will automatically format code with **black**, lint with **ruff**,
 and type-check with **mypy** every time you commit.
 
 ## Documentation
+
+Additional markdown resources are stored in the `docs` directory.
+See [docs/README.md](docs/README.md) for an overview of available files,
+a table of contents, and instructions on contributing new documentation.
+Remember to add new markdown files to that index and mention them here when appropriate.
+
 Additional markdown documents are stored in the `docs` directory.
 See [docs/README.md](docs/README.md) for an index of available files and
 guidelines on contributing new documentation. Remember to link any new
 markdown files from both that index and this README when appropriate.
 For a summary of project goals and directory layout, see
 [docs/design_overview.md](docs/design_overview.md).
+
 
 ## License
 
