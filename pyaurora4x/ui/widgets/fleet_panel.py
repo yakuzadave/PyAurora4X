@@ -27,9 +27,9 @@ class FleetPanel(Static):
     selected_fleet = reactive(None)
     
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.fleet_list: List[Fleet] = []
         self.current_fleet: Optional[Fleet] = None
+        super().__init__(**kwargs)
     
     def compose(self) -> ComposeResult:
         """Compose the fleet panel layout."""
@@ -277,16 +277,27 @@ class FleetPanel(Static):
     
     def _update_display(self) -> None:
         """Update the entire display."""
-        if not self.fleet_list:
+        try:
             info_widget = self.query_one("#fleet_info", Static)
+        except Exception:
+            return
+
+        if not self.fleet_list:
             info_widget.update("No fleets available.")
         else:
             self._refresh_fleet_table()
             if self.current_fleet:
                 self._update_fleet_details()
 
-    def refresh(self) -> None:
+    def refresh(
+        self,
+        *regions: "Region",
+        repaint: bool = True,
+        layout: bool = False,
+        recompose: bool = False,
+    ) -> None:
         """Refresh fleet information."""
+        super().refresh(*regions, repaint=repaint, layout=layout, recompose=recompose)
         self._update_display()
 
     def highlight_fleet(self, index: int) -> None:

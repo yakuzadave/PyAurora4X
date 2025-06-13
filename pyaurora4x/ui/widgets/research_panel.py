@@ -25,11 +25,11 @@ class ResearchPanel(Static):
     selected_tech = reactive(None)
     
     def __init__(self, tech_manager=None, **kwargs):
-        super().__init__(**kwargs)
         self.current_empire: Optional[Empire] = None
         self.current_tech: Optional[Technology] = None
         self.available_techs: List[Technology] = []
         self.tech_manager = tech_manager
+        super().__init__(**kwargs)
     
     def compose(self) -> ComposeResult:
         """Compose the research panel layout."""
@@ -310,8 +310,12 @@ class ResearchPanel(Static):
     
     def _update_display(self) -> None:
         """Update the entire display."""
-        if not self.current_empire:
+        try:
             info_widget = self.query_one("#tech_info", Static)
+        except Exception:
+            return
+
+        if not self.current_empire:
             info_widget.update("No empire data available.")
         else:
             self._refresh_tech_table()
@@ -319,8 +323,15 @@ class ResearchPanel(Static):
             if self.current_tech:
                 self._update_tech_details()
 
-    def refresh(self) -> None:
+    def refresh(
+        self,
+        *regions: "Region",
+        repaint: bool = True,
+        layout: bool = False,
+        recompose: bool = False,
+    ) -> None:
         """Refresh research information."""
+        super().refresh(*regions, repaint=repaint, layout=layout, recompose=recompose)
         self._update_display()
 
 
