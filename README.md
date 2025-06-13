@@ -71,3 +71,7 @@ Execute the unit tests with pytest:
 ```bash
 pytest -q
 ```
+
+## License
+
+PyAurora 4X is released under the [MIT License](LICENSE).
