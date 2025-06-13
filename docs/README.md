@@ -5,9 +5,11 @@ markdown file focuses on a different topic. Use this page as the central index
 for documentation and as a guide when adding new files.
 
 ## Table of Contents
-- [Project README](../README.md) - High level overview, installation and usage instructions
-- [Agent Instructions](../AGENTS.md) - Rules for automated agents contributing to the project
-- [Documentation Overview](README.md) - This file, listing docs and how to add more
+- [Project README](../README.md)
+- [Agent Instructions](../AGENTS.md)
+- [Documentation Overview](README.md)
+- [Design Overview](design_overview.md)
+
 
 ## Contributing New Documentation
 

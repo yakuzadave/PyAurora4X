@@ -56,6 +56,14 @@ Launch the main interface with:
 python main.py
 ```
 
+You can also start a brand new game immediately with:
+
+```bash
+python main.py --new-game
+```
+
+This is useful when you want to skip loading existing saves and jump straight into a fresh session.
+
 ### Simulation Test
 
 You can run a headless simulation for quick verification:
@@ -72,14 +80,34 @@ Execute the unit tests with pytest:
 pytest -q
 ```
 
+### Pre-commit Hooks
+
+Install the `pre-commit` tool and set up the git hooks:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+The hooks will automatically format code with **black**, lint with **ruff**,
+and type-check with **mypy** every time you commit.
 
 ## Documentation
+
 Additional markdown resources are stored in the `docs` directory.
 See [docs/README.md](docs/README.md) for an overview of available files,
 a table of contents, and instructions on contributing new documentation.
 Remember to add new markdown files to that index and mention them here when appropriate.
 
+Additional markdown documents are stored in the `docs` directory.
+See [docs/README.md](docs/README.md) for an index of available files and
+guidelines on contributing new documentation. Remember to link any new
+markdown files from both that index and this README when appropriate.
+For a summary of project goals and directory layout, see
+[docs/design_overview.md](docs/design_overview.md).
+
+
 ## License
 
-PyAurora 4X is released under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
 

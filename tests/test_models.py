@@ -4,14 +4,12 @@ Unit tests for PyAurora 4X core models
 Tests the data models, validation, and serialization.
 """
 
-import pytest
-from datetime import datetime
 
 from pyaurora4x.core.models import (
     Vector3D, Empire, Fleet, Ship, Colony, StarSystem, Planet, Technology
 )
 from pyaurora4x.core.enums import (
-    PlanetType, StarType, FleetStatus, TechnologyType, ShipType
+    PlanetType, StarType, FleetStatus, TechnologyType
 )
 
 

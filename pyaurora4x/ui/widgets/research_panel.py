@@ -4,14 +4,13 @@ Research Panel Widget for PyAurora 4X
 Displays technology tree, research progress, and allows research management.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from textual.widgets import Static, DataTable, Button, Label, ProgressBar
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 
 from pyaurora4x.core.models import Empire, Technology
-from pyaurora4x.core.enums import TechnologyType
 
 
 class ResearchPanel(Static):
@@ -259,7 +258,7 @@ class ResearchPanel(Static):
             can_cancel = self.current_empire.current_research is not None
             cancel_btn.disabled = not can_cancel
             
-        except:
+        except Exception:
             pass  # Buttons might not be ready yet
     
     def on_button_pressed(self, event: Button.Pressed) -> None:

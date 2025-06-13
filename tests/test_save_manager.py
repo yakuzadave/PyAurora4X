@@ -1,7 +1,5 @@
-import json
 from pathlib import Path
 
-import pytest
 
 import pyaurora4x.data.save_manager as sm
 from pyaurora4x.data.save_manager import SaveManager

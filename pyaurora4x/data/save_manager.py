@@ -5,7 +5,6 @@ Handles game state serialization and persistence using DuckDB, TinyDB or JSON.
 """
 
 import json
-import os
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 from enum import Enum

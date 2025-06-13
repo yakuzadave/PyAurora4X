@@ -5,7 +5,7 @@ Tests the orbital mechanics simulation using REBOUND and fallback systems.
 """
 
 import math
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -523,13 +523,9 @@ class TestOrbitalMechanicsIntegration:
         om.initialize_system(system)
 
         # Update position over time
-        initial_distance = mars.position.magnitude()
-
-        # Advance through part of orbit
         om.update_positions(system, 365.25 * 24 * 3600 * 0.25)  # Quarter year
 
         # Should have moved
-        new_distance = mars.position.magnitude()
         distance_moved = math.sqrt(
             (mars.position.x - 1.524 * 149597870.7) ** 2 + mars.position.y**2
         )
