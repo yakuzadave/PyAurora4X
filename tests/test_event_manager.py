@@ -171,3 +171,54 @@ def test_event_processing_order_and_priorities():
     assert log == ["fleet_high", "fleet_normal", "research1", "research_low"]
     processed_titles = [e.title for e in manager.processed_events]
     assert processed_titles == log
+
+
+def test_unregister_handler_stops_processing():
+    manager = EventManager()
+    log = []
+
+    handler = RecordingHandler(log)
+    manager.register_handler(handler, EventCategory.FLEET)
+    manager.unregister_handler(handler, EventCategory.FLEET)
+
+    manager.post_event(
+        GameEvent(
+            id="",
+            category=EventCategory.FLEET,
+            priority=EventPriority.NORMAL,
+            timestamp=1,
+            title="unhandled",
+            description="",
+        )
+    )
+
+    manager.process_events()
+
+    assert log == []
+    assert len(manager.processed_events) == 0
+    assert len(manager.event_queue) == 1
+
+
+def test_event_expiration():
+    manager = EventManager()
+    log = []
+
+    manager.register_handler(RecordingHandler(log), EventCategory.FLEET)
+
+    manager.post_event(
+        GameEvent(
+            id="",
+            category=EventCategory.FLEET,
+            priority=EventPriority.NORMAL,
+            timestamp=1,
+            title="expired",
+            description="",
+            expiry_time=5.0,
+        )
+    )
+
+    manager.process_events(current_time=10.0)
+
+    assert log == []
+    assert len(manager.processed_events) == 0
+    assert len(manager.event_queue) == 0
