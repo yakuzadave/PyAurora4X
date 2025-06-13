@@ -10,6 +10,7 @@ for documentation and as a guide when adding new files.
 - [Documentation Overview](README.md)
 - [Design Overview](design_overview.md)
 - [Gameplay Guide](gameplay_guide.md)
+- [Contribution Guide](contributing.md)
 
 
 ## Contributing New Documentation
