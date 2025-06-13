@@ -64,6 +64,14 @@ python main.py --new-game
 
 This is useful when you want to skip loading existing saves and jump straight into a fresh session.
 
+To resume a previous session, provide the save name or path:
+
+```bash
+python main.py --load <save_name_or_path>
+```
+
+`<save_name_or_path>` refers to either a file path or the name of a save stored in the default directory.
+
 ### Simulation Test
 
 You can run a headless simulation for quick verification:
