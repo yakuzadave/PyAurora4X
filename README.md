@@ -104,7 +104,7 @@ contribute new documents.
 
 - [docs/README.md](docs/README.md) – Documentation index and contribution guidelines.
 - [docs/design_overview.md](docs/design_overview.md) – Summary of project goals and folder structure.
-- [docs/gameplay_guide.md](docs/gameplay_guide.md) – Gameplay instructions and fleet movement mechanics.
+- [docs/gameplay_guide.md](docs/gameplay_guide.md) – How to play: basic commands, UI overview, gameplay phases, and fleet movement details.
 - [docs/contributing.md](docs/contributing.md) – Developer contribution guide.
 
 
