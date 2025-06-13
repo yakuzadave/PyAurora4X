@@ -553,8 +553,8 @@ class SaveManager:
         """Custom JSON serializer for complex objects."""
         if isinstance(obj, Enum):
             return obj.value
-        elif hasattr(obj, "dict"):
-            return obj.dict()
+        elif hasattr(obj, "model_dump"):
+            return obj.model_dump()
         elif hasattr(obj, "__dict__"):
             return obj.__dict__
         elif isinstance(obj, datetime):

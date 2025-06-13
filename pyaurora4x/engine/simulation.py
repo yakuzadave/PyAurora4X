@@ -63,7 +63,7 @@ class GameSimulation:
         """Create a fresh copy of all technologies for a new empire."""
         techs = {}
         for tech_id, tech in self.tech_manager.get_all_technologies().items():
-            techs[tech_id] = Technology(**tech.dict())
+            techs[tech_id] = Technology(**tech.model_dump())
         return techs
     
     def initialize_new_game(self, num_systems: int = 3, num_empires: int = 2) -> None:
@@ -365,9 +365,9 @@ class GameSimulation:
         return {
             "current_time": self.current_time,
             "game_start_time": self.game_start_time.isoformat(),
-            "empires": {id: empire.dict() for id, empire in self.empires.items()},
-            "star_systems": {id: system.dict() for id, system in self.star_systems.items()},
-            "fleets": {id: fleet.dict() for id, fleet in self.fleets.items()},
+            "empires": {id: empire.model_dump() for id, empire in self.empires.items()},
+            "star_systems": {id: system.model_dump() for id, system in self.star_systems.items()},
+            "fleets": {id: fleet.model_dump() for id, fleet in self.fleets.items()},
         }
     
     def load_game_state(self, state: Dict[str, Any]) -> None:

@@ -75,7 +75,7 @@ class ResearchPanel(Static):
         # Ensure empire has technologies loaded
         if not self.current_empire.technologies and self.tech_manager:
             self.current_empire.technologies = {
-                tid: Technology(**t.dict())
+                tid: Technology(**t.model_dump())
                 for tid, t in self.tech_manager.get_all_technologies().items()
             }
 
