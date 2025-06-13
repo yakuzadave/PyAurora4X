@@ -161,13 +161,25 @@ class OrbitalMechanics:
             if i < len(system_data['planets']):
                 planet_data = system_data['planets'][i]
                 
-                # Time scale: 1000 units per orbital period for tests
-                period_units = planet_data['orbital_period'] * 1000.0
-                mean_motion = 2 * np.pi / period_units
+
+                # Calculate mean motion (radians per second)
+                period_seconds = planet_data['orbital_period']
+                mean_motion = 2 * np.pi / period_seconds
+
                 
                 # Calculate mean anomaly at current time
                 mean_anomaly = (mean_motion * current_time) % (2 * np.pi)
                 
+
+                e = planet_data.get('eccentricity', 0.0)
+                E = mean_anomaly
+                for _ in range(5):
+                    E = mean_anomaly + e * np.sin(E)
+                a = planet_data['orbital_distance'] * 149597870.7
+                r = a * (1 - e * np.cos(E))
+                true_anomaly = 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2),
+                                             np.sqrt(1 - e) * np.cos(E / 2))
+
                 # Solve Kepler's equation for eccentric anomaly
                 e = planet_data['eccentricity']
                 eccentric_anomaly = mean_anomaly

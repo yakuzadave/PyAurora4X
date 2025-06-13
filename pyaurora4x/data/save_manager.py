@@ -8,6 +8,7 @@ import json
 import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 import logging
 
@@ -391,7 +392,9 @@ class SaveManager:
     
     def _json_serializer(self, obj):
         """Custom JSON serializer for complex objects."""
-        if hasattr(obj, 'dict'):
+        if isinstance(obj, Enum):
+            return obj.value
+        elif hasattr(obj, 'dict'):
             return obj.dict()
         elif hasattr(obj, '__dict__'):
             return obj.__dict__
