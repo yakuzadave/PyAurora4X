@@ -123,29 +123,28 @@ class SaveManager:
     def _save_with_duckdb(self, save_data: Dict[str, Any], save_name: str) -> str:
         """Save using DuckDB."""
         try:
-            conn = duckdb.connect(str(self.duckdb_path))
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS saves ("
-                "save_name TEXT, save_date TEXT, game_version TEXT, "
-                "save_format_version TEXT, game_state JSON)"
-            )
-            conn.execute("DELETE FROM saves WHERE save_name = ?", [save_name])
-            meta = save_data["metadata"]
-            game_json = json.dumps(
-                self._convert_keys_to_strings(save_data["game_state"]),
-                default=self._json_serializer,
-            )
-            conn.execute(
-                "INSERT INTO saves VALUES (?, ?, ?, ?, ?)",
-                [
-                    meta["save_name"],
-                    meta["save_date"],
-                    meta["game_version"],
-                    meta["save_format_version"],
-                    game_json,
-                ],
-            )
-            conn.close()
+            with duckdb.connect(str(self.duckdb_path)) as conn:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS saves ("
+                    "save_name TEXT, save_date TEXT, game_version TEXT, "
+                    "save_format_version TEXT, game_state JSON)"
+                )
+                conn.execute("DELETE FROM saves WHERE save_name = ?", [save_name])
+                meta = save_data["metadata"]
+                game_json = json.dumps(
+                    self._convert_keys_to_strings(save_data["game_state"]),
+                    default=self._json_serializer,
+                )
+                conn.execute(
+                    "INSERT INTO saves VALUES (?, ?, ?, ?, ?)",
+                    [
+                        meta["save_name"],
+                        meta["save_date"],
+                        meta["game_version"],
+                        meta["save_format_version"],
+                        game_json,
+                    ],
+                )
             logger.info(f"Game saved to DuckDB: {save_name}")
             return str(self.duckdb_path)
         except Exception as e:  # pragma: no cover - runtime safety
@@ -217,17 +216,16 @@ class SaveManager:
 
     def _load_with_duckdb(self, save_name: str) -> Dict[str, Any]:
         """Load using DuckDB."""
-        conn = duckdb.connect(str(self.duckdb_path))
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS saves ("
-            "save_name TEXT, save_date TEXT, game_version TEXT, "
-            "save_format_version TEXT, game_state JSON)"
-        )
-        row = conn.execute(
-            "SELECT game_state FROM saves WHERE save_name = ? ORDER BY save_date DESC LIMIT 1",
-            [save_name],
-        ).fetchone()
-        conn.close()
+        with duckdb.connect(str(self.duckdb_path)) as conn:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS saves ("
+                "save_name TEXT, save_date TEXT, game_version TEXT, "
+                "save_format_version TEXT, game_state JSON)"
+            )
+            row = conn.execute(
+                "SELECT game_state FROM saves WHERE save_name = ? ORDER BY save_date DESC LIMIT 1",
+                [save_name],
+            ).fetchone()
         if not row:
             raise FileNotFoundError(f"Save '{save_name}' not found in database")
         logger.info(f"Game loaded from DuckDB: {save_name}")
@@ -304,16 +302,15 @@ class SaveManager:
         """List saves stored in DuckDB."""
         saves = []
         try:
-            conn = duckdb.connect(str(self.duckdb_path))
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS saves ("
-                "save_name TEXT, save_date TEXT, game_version TEXT, "
-                "save_format_version TEXT, game_state JSON)"
-            )
-            rows = conn.execute(
-                "SELECT save_name, save_date, game_version, save_format_version FROM saves"
-            ).fetchall()
-            conn.close()
+            with duckdb.connect(str(self.duckdb_path)) as conn:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS saves ("
+                    "save_name TEXT, save_date TEXT, game_version TEXT, "
+                    "save_format_version TEXT, game_state JSON)"
+                )
+                rows = conn.execute(
+                    "SELECT save_name, save_date, game_version, save_format_version FROM saves"
+                ).fetchall()
             for row in rows:
                 saves.append(
                     {
@@ -401,16 +398,15 @@ class SaveManager:
     def _delete_from_duckdb(self, save_name: str) -> bool:
         """Delete save from DuckDB."""
         try:
-            conn = duckdb.connect(str(self.duckdb_path))
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS saves ("
-                "save_name TEXT, save_date TEXT, game_version TEXT, "
-                "save_format_version TEXT, game_state JSON)"
-            )
-            result = conn.execute(
-                "DELETE FROM saves WHERE save_name = ?", [save_name]
-            ).rowcount
-            conn.close()
+            with duckdb.connect(str(self.duckdb_path)) as conn:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS saves ("
+                    "save_name TEXT, save_date TEXT, game_version TEXT, "
+                    "save_format_version TEXT, game_state JSON)"
+                )
+                result = conn.execute(
+                    "DELETE FROM saves WHERE save_name = ?", [save_name]
+                ).rowcount
             if result:
                 logger.info(f"Deleted save from DuckDB: {save_name}")
                 return True
@@ -465,27 +461,26 @@ class SaveManager:
         export_file = Path(export_path)
 
         if export_file.suffix == ".duckdb":
-            conn = duckdb.connect(str(export_file))
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS exports ("
-                "export_name TEXT, export_date TEXT, game_version TEXT, "
-                "save_format_version TEXT, game_state JSON)"
-            )
-            data_json = json.dumps(
-                self._convert_keys_to_strings(export_data["game_state"]),
-                default=self._json_serializer,
-            )
-            conn.execute(
-                "INSERT INTO exports VALUES (?, ?, ?, ?, ?)",
-                [
-                    export_data["metadata"]["original_save"],
-                    export_data["metadata"]["export_date"],
-                    export_data["metadata"]["game_version"],
-                    export_data["metadata"]["save_format_version"],
-                    data_json,
-                ],
-            )
-            conn.close()
+            with duckdb.connect(str(export_file)) as conn:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS exports ("
+                    "export_name TEXT, export_date TEXT, game_version TEXT, "
+                    "save_format_version TEXT, game_state JSON)"
+                )
+                data_json = json.dumps(
+                    self._convert_keys_to_strings(export_data["game_state"]),
+                    default=self._json_serializer,
+                )
+                conn.execute(
+                    "INSERT INTO exports VALUES (?, ?, ?, ?, ?)",
+                    [
+                        export_data["metadata"]["original_save"],
+                        export_data["metadata"]["export_date"],
+                        export_data["metadata"]["game_version"],
+                        export_data["metadata"]["save_format_version"],
+                        data_json,
+                    ],
+                )
         else:
             with open(export_file, "w") as f:
                 json.dump(export_data, f, indent=2, default=self._json_serializer)
