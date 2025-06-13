@@ -8,10 +8,12 @@ from pyaurora4x.ui.widgets.star_system_view import StarSystemView
 from pyaurora4x.ui.widgets.fleet_panel import FleetPanel
 from pyaurora4x.ui.widgets.research_panel import ResearchPanel
 from pyaurora4x.ui.widgets.empire_stats import EmpireStatsWidget
+from pyaurora4x.ui.widgets.load_dialog import LoadGameDialog
 
 __all__ = [
     "StarSystemView",
     "FleetPanel", 
     "ResearchPanel",
     "EmpireStatsWidget",
+    "LoadGameDialog",
 ]
