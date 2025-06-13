@@ -322,43 +322,9 @@ class GameSimulation:
                         empire.current_research = None
                         empire.research_points = 0
 
-            if not empire.is_player:
-                # === Fleet Movement ===
-                for fleet_id in empire.fleets:
-                    fleet = self.fleets.get(fleet_id)
-                    if not fleet or fleet.status != FleetStatus.IDLE:
-                        continue
-
-                    system = self.star_systems.get(fleet.system_id)
-                    if not system or not system.planets:
-                        continue
-
-                    target = random.choice(system.planets)
-                    fleet.destination = target.position.copy()
-                    fleet.estimated_arrival = self.current_time + 3600.0
-                    fleet.current_orders.append(f"Move to {target.name}")
-                    fleet.status = FleetStatus.MOVING
-                    logger.debug(
-                        f"{fleet.name} ordered to move to {target.name} in {system.name}"
-                    )
-
-                # Auto-assign new research when none selected
-                if not empire.current_research:
-                    available = [
-                        t
-                        for t in self.tech_manager.technologies.values()
-                        if t.id not in empire.technologies
-                        or not empire.technologies[t.id].is_researched
-                    ]
-                    if available:
-                        chosen = random.choice(available)
-                        empire.technologies[chosen.id] = chosen
-                        empire.current_research = chosen.id
-                        empire.research_points = 0.0
-                        empire.research_allocation = {chosen.tech_type: 100.0}
-                        logger.debug(
-                            f"{empire.name} started researching {chosen.name}"
-                        )
+            # AI-specific behaviors like fleet movement and new research
+            # assignment are handled by `_update_ai_empires` via
+            # `_process_ai_empire` and should not be duplicated here.
 
     
     def pause(self) -> None:
