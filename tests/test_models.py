@@ -81,7 +81,7 @@ class TestTechnology:
             research_cost=100
         )
         
-        data = tech.dict()
+        data = tech.model_dump()
         assert data["id"] == "test_tech"
         assert data["name"] == "Test Technology"
         assert data["research_cost"] == 100
@@ -254,7 +254,7 @@ class TestEmpire:
             home_planet_id="home_planet"
         )
         
-        data = empire.dict()
+        data = empire.model_dump()
         assert data["name"] == "Test Empire"
         assert data["home_system_id"] == "home_system"
         assert data["is_player"] is False
