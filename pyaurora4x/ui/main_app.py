@@ -369,7 +369,7 @@ class PyAurora4XApp(App):
         message_log.write_line("  3 - Show research")
         message_log.write_line("  h - Show this help")
     
-    async def on_timer(self) -> None:
+    async def on_timer(self, event) -> None:
         """Handle periodic updates."""
         if self.simulation and not self.simulation.is_paused:
             # Auto-save periodically
@@ -386,7 +386,7 @@ class PyAurora4XApp(App):
         # Let the binding system handle most keys
         pass
     
-    def action_quit(self) -> None:
+    async def action_quit(self) -> None:
         """Quit the application."""
         if self.simulation:
             # Auto-save before quitting
