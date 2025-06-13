@@ -15,8 +15,9 @@ from pyaurora4x.engine.simulation import GameSimulation
 from pyaurora4x.ui.main_app import PyAurora4XApp
 
 __all__ = [
+    "__version__",
     "Empire",
-    "Fleet", 
+    "Fleet",
     "Ship",
     "Colony",
     "StarSystem",

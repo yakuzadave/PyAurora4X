@@ -26,3 +26,15 @@ The game requires several Python packages. Install them using:
 
 ```bash
 pip install textual rich pydantic numpy tinydb
+
+```
+
+### Publishing to PyPI
+
+To build and publish the package to PyPI:
+
+```bash
+pip install build twine
+python -m build
+twine upload dist/*
+```
