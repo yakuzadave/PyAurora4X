@@ -79,20 +79,18 @@ def main():
     app = PyAurora4XApp()
     
     if args.load:
-        # Load existing game
+        # Set load parameters for the app to handle after initialization
         save_manager = SaveManager()
         try:
             game_data = save_manager.load_game(args.load)
-            app.load_game_data(game_data)
-            print(f"Loaded game: {args.load}")
+            app.load_file = args.load
+            app.load_data = game_data
+            print(f"Will load game: {args.load}")
         except Exception as e:
             print(f"Error loading game: {e}")
             return
-    else:
-        # Start new game (default)
-        app.start_new_game()
     
-    # Run the application
+    # Run the application (initialization happens in on_ready)
     app.run()
 
 

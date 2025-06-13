@@ -115,7 +115,45 @@ class PyAurora4XApp(App):
     for game information and controls.
     """
     
-    CSS_PATH = None  # We'll define CSS inline for simplicity
+    CSS = """
+    .panel {
+        border: solid $primary;
+        margin: 1;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    #main_container {
+        height: 100%;
+    }
+    
+    #top_row {
+        height: 80%;
+    }
+    
+    #main_view {
+        width: 70%;
+    }
+    
+    #side_panel {
+        width: 30%;
+    }
+    
+    #bottom_panel {
+        height: 20%;
+    }
+    
+    .time-controls {
+        padding: 1;
+        border: solid $accent;
+    }
+    
+    Button {
+        margin: 0 1;
+    }
+    """
     
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -135,6 +173,8 @@ class PyAurora4XApp(App):
         self.current_view = "systems"
         self.auto_save_interval = 300  # 5 minutes
         self.last_auto_save = 0
+        self.load_file: Optional[str] = None
+        self.load_data: Optional[Dict[str, Any]] = None
     
     def compose(self) -> ComposeResult:
         """Compose the main application layout."""
@@ -164,52 +204,19 @@ class PyAurora4XApp(App):
         self.title = "PyAurora 4X - Terminal Space Strategy"
         self.sub_title = "A Python-based 4X game with realistic orbital mechanics"
         
-        # Apply custom CSS
-        self.stylesheet.update("""
-        .panel {
-            border: solid $primary;
-            margin: 1;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        #main_container {
-            height: 100%;
-        }
-        
-        #top_row {
-            height: 80%;
-        }
-        
-        #main_view {
-            width: 70%;
-        }
-        
-        #side_panel {
-            width: 30%;
-        }
-        
-        #bottom_panel {
-            height: 20%;
-        }
-        
-        .time-controls {
-            padding: 1;
-            border: solid $accent;
-        }
-        
-        Button {
-            margin: 0 1;
-        }
-        """)
-        
-        # Start with a new game if no simulation exists
-        if self.simulation is None:
-            self.start_new_game()
+        # Define custom CSS as a class attribute instead of runtime update
+        pass
         
         logger.info("PyAurora 4X application started")
+    
+    def on_ready(self) -> None:
+        """Called when the app is ready and all widgets are mounted."""
+        # Handle load data if provided
+        if self.load_data:
+            self.load_game_data(self.load_data)
+        elif self.simulation is None:
+            # Start with a new game if no simulation exists
+            self.start_new_game()
     
     def start_new_game(self) -> None:
         """Start a new game."""
@@ -252,9 +259,8 @@ class PyAurora4XApp(App):
         fleet_panel = self.query_one("#fleet_view", FleetPanel)
         player_empire = self.simulation.get_player_empire()
         if player_empire:
-            fleet_panel.update_fleets(
-                [self.simulation.get_fleet(fid) for fid in player_empire.fleets]
-            )
+            fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
+            fleet_panel.update_fleets(fleets)
         
         # Update research panel
         research_panel = self.query_one("#research_view", ResearchPanel)
