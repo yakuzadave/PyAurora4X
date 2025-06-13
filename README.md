@@ -17,13 +17,57 @@ A Python-based 4X space strategy game with realistic orbital mechanics, terminal
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - pip package manager
 
 ### Required Dependencies
 
-The game requires several Python packages. Install them using:
+Install the core dependencies with pip:
 
 ```bash
-pip install textual rich pydantic numpy tinydb
+pip install numpy pydantic textual rich tinydb rebound duckdb pytest
+```
+
+`rebound` provides the N-body orbital mechanics engine and `duckdb` enables the
+optional high-performance save backend. If `duckdb` is not installed the game
+will fall back to TinyDB or plain JSON files.
+
+### Optional Features
+
+PyAurora 4X can store saves using TinyDB or DuckDB. By default the
+`SaveManager` automatically uses DuckDB when available. You can explicitly
+select the backend when creating the `SaveManager`:
+
+```python
+from pyaurora4x.data import SaveManager
+
+# Force DuckDB
+manager = SaveManager(use_duckdb=True)
+
+# Use TinyDB even if DuckDB is installed
+manager = SaveManager(use_duckdb=False)
+```
+
+### Running the Game
+
+Launch the main interface with:
+
+```bash
+python main.py
+```
+
+### Simulation Test
+
+You can run a headless simulation for quick verification:
+
+```bash
+python main.py --test
+```
+
+### Running the Test Suite
+
+Execute the unit tests with pytest:
+
+```bash
+pytest -q
 ```

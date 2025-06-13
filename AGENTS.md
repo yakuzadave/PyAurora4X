@@ -12,9 +12,10 @@ The commit history shows a gradual build-out of game functionality, including:
 - AI and research improvements, save/load dialog, and extensive tech tree tests.
 
 ## Running Tests
-Install dependencies as specified in `pyproject.toml` and run the test suite:
+Install the dependencies listed in `pyproject.toml` using pip, then run the test
+suite:
 
 ```bash
-pip install -r requirements.txt  # or install packages manually
+pip install numpy pydantic textual tinydb rebound pytest
 pytest -q
 ```
