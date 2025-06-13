@@ -19,3 +19,7 @@ suite:
 pip install numpy pydantic textual tinydb rebound pytest
 pytest -q
 ```
+
+## Documentation
+Place new markdown documents in the `docs` folder when adding project documentation.
+Update README.md with references to any new documents.
