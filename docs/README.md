@@ -9,6 +9,7 @@ for documentation and as a guide when adding new files.
 - [Agent Instructions](../AGENTS.md)
 - [Documentation Overview](README.md)
 - [Design Overview](design_overview.md)
+- [Gameplay Guide](gameplay_guide.md)
 
 
 ## Contributing New Documentation

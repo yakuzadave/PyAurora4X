@@ -102,14 +102,10 @@ contribute new documents.
 
 ### Available Guides
 
-- [docs/README.md](docs/README.md) – Documentation index and contribution
-  guidelines.
-- [docs/design_overview.md](docs/design_overview.md) – Summary of project goals
-  and folder structure.
-- [docs/gameplay_guide.md](docs/gameplay_guide.md) – Gameplay instructions
-  *(planned)*.
-- [docs/contributing.md](docs/contributing.md) – Developer contribution guide
-  *(planned)*.
+- [docs/README.md](docs/README.md) – Documentation index and contribution guidelines.
+- [docs/design_overview.md](docs/design_overview.md) – Summary of project goals and folder structure.
+- [docs/gameplay_guide.md](docs/gameplay_guide.md) – Gameplay instructions and fleet movement mechanics.
+- [docs/contributing.md](docs/contributing.md) – Developer contribution guide *(planned)*.
 
 
 ## License

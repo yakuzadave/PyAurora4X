@@ -298,6 +298,7 @@ class TestGameSimulation:
 
             for fleet_id in empire.fleets:
                 fleet = sim.get_fleet(fleet_id)
-                assert fleet.status == FleetStatus.MOVING
+                assert fleet.status == FleetStatus.IN_TRANSIT
+                assert fleet.estimated_arrival is not None
 
 

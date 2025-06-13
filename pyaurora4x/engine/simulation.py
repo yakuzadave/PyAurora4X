@@ -270,7 +270,7 @@ class GameSimulation:
         """Process AI decisions for a single empire."""
         logger.debug(f"Processing AI for empire: {empire.name}")
 
-        # Move idle fleets to random planets in their current system
+        # Move idle fleets using orbital transfer calculations
         for fleet_id in empire.fleets:
             fleet = self.fleets.get(fleet_id)
             if not fleet or fleet.status != FleetStatus.IDLE:
@@ -281,12 +281,18 @@ class GameSimulation:
                 continue
 
             target = random.choice(system.planets)
+            transfer = self.orbital_mechanics.calculate_transfer_orbit(
+                fleet.position, target.position, system.star_mass
+            )
             fleet.destination = target.position.copy()
-            fleet.estimated_arrival = self.current_time + 3600.0  # 1 hour ETA
-            fleet.current_orders.append(f"Move to {target.name}")
-            fleet.status = FleetStatus.MOVING
+            fleet.estimated_arrival = self.current_time + transfer["transfer_time"]
+            order = (
+                f"Transfer to {target.name} via {transfer['transfer_type']}"
+            )
+            fleet.current_orders.append(order)
+            fleet.status = FleetStatus.IN_TRANSIT
             logger.debug(
-                f"{fleet.name} ordered to move to {target.name} in {system.name}"
+                f"{fleet.name} transferring to {target.name} (ETA {transfer['transfer_time']}s)"
             )
 
         # Start new research if none is assigned
