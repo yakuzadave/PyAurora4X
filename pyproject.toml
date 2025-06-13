@@ -10,3 +10,15 @@ dependencies = [
     "textual>=3.3.0",
     "tinydb>=4.8.2",
 ]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 88
+target-version = 'py311'
+
+[tool.mypy]
+python_version = '3.11'
+strict = true
