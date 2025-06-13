@@ -54,6 +54,11 @@ class StarSystemView(Static):
         self.system_fleets = fleets or []
         self._calculate_scale()
         self._render_system()
+
+    def refresh_positions(self) -> None:
+        """Refresh planet and fleet positions."""
+        if self.system:
+            self._render_system()
     
     def _calculate_scale(self) -> None:
         """Calculate the scale factor for display."""
