@@ -4,10 +4,10 @@ Empire Statistics Widget for PyAurora 4X
 Displays empire statistics, resources, and overall status.
 """
 
-from typing import Optional, Dict, Any
-from textual.widgets import Static, Label, ProgressBar
+from typing import Optional
+from textual.widgets import Static, Label
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical, Horizontal
+from textual.containers import Container, Vertical
 from textual.reactive import reactive
 
 from pyaurora4x.core.models import Empire
@@ -72,7 +72,7 @@ class EmpireStatsWidget(Static):
             for section_id in ["empire_resources", "empire_research", "empire_military", "empire_colonies"]:
                 section = self.query_one(f"#{section_id}", Static)
                 section.update("")
-        except:
+        except Exception:
             pass  # Widgets might not be ready yet
     
     def _update_basic_info(self) -> None:
@@ -98,7 +98,7 @@ class EmpireStatsWidget(Static):
         try:
             basic_info = self.query_one("#empire_basic_info", Static)
             basic_info.update(text)
-        except:
+        except Exception:
             pass
     
     def _update_resources(self) -> None:
@@ -134,7 +134,7 @@ class EmpireStatsWidget(Static):
         try:
             resources = self.query_one("#empire_resources", Static)
             resources.update(text)
-        except:
+        except Exception:
             pass
     
     def _update_research(self) -> None:
@@ -180,7 +180,7 @@ class EmpireStatsWidget(Static):
         try:
             research = self.query_one("#empire_research", Static)
             research.update(text)
-        except:
+        except Exception:
             pass
     
     def _update_military(self) -> None:
@@ -214,7 +214,7 @@ class EmpireStatsWidget(Static):
         try:
             military = self.query_one("#empire_military", Static)
             military.update(text)
-        except:
+        except Exception:
             pass
     
     def _update_colonies(self) -> None:
@@ -249,7 +249,7 @@ class EmpireStatsWidget(Static):
         try:
             colonies = self.query_one("#empire_colonies", Static)
             colonies.update(text)
-        except:
+        except Exception:
             pass
     
     def on_mount(self) -> None:

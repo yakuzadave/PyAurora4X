@@ -5,9 +5,8 @@ Manages the overall game state, time advancement, and coordination
 between different game systems.
 """
 
-import time
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from typing import Dict, Optional, Any
+from datetime import datetime
 import logging
 import random
 
@@ -15,14 +14,13 @@ import random
 from pyaurora4x.core.models import Empire, StarSystem, Fleet, Technology, Planet, Vector3D
 
 
-from pyaurora4x.core.enums import FleetStatus, TechnologyType, PlanetType
+from pyaurora4x.core.enums import FleetStatus, PlanetType
 
-from pyaurora4x.core.events import EventManager, GameEvent
+from pyaurora4x.core.events import EventManager
 from pyaurora4x.engine.scheduler import GameScheduler
 from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
 
-from pyaurora4x.core.enums import PlanetType
 from pyaurora4x.data.tech_tree import TechTreeManager
 
 logger = logging.getLogger(__name__)

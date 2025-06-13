@@ -10,7 +10,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 
-from pyaurora4x.core.models import Fleet, Ship
+from pyaurora4x.core.models import Fleet
 from pyaurora4x.core.enums import FleetStatus
 from pyaurora4x.core.utils import format_distance, format_time
 
@@ -203,7 +203,7 @@ class FleetPanel(Static):
                 try:
                     button = self.query_one(f"#{button_id}", Button)
                     button.disabled = True
-                except:
+                except Exception:
                     pass
             return
         
@@ -223,7 +223,7 @@ class FleetPanel(Static):
             survey_btn.disabled = status in ['surveying', 'moving', 'in_transit']
             stop_btn.disabled = status in ['idle']
             
-        except:
+        except Exception:
             pass  # Buttons might not be ready yet
     
     def on_button_pressed(self, event: Button.Pressed) -> None:

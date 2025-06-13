@@ -6,14 +6,13 @@ orbits, and fleet positions.
 """
 
 import math
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.reactive import reactive
 
-from pyaurora4x.core.models import StarSystem, Fleet, Planet, Vector3D
-from pyaurora4x.core.utils import distance_3d, format_distance
+from pyaurora4x.core.models import StarSystem, Fleet, Planet
 
 
 class StarSystemView(Static):

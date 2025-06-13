@@ -5,7 +5,7 @@ Manages timed events and recurring tasks in the game simulation.
 """
 
 import heapq
-from typing import Callable, List, Optional, Any, Dict
+from typing import Callable, List, Optional, Dict
 from dataclasses import dataclass
 import logging
 
