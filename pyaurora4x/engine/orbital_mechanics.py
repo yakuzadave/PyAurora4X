@@ -5,7 +5,7 @@ Provides realistic orbital dynamics for planets, moons, and spacecraft.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -17,7 +17,7 @@ except ImportError:
     REBOUND_AVAILABLE = False
     logging.warning("REBOUND not available - using simplified orbital mechanics")
 
-from pyaurora4x.core.models import Planet, StarSystem, Vector3D
+from pyaurora4x.core.models import StarSystem, Vector3D
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +199,6 @@ class OrbitalMechanics:
 
                 x = r * np.cos(true_anomaly)
                 y = r * np.sin(true_anomaly)
-                z = 0.0
 
                 # Apply inclination (simplified - only tilt around x-axis)
                 inclination = np.radians(planet_data["inclination"])

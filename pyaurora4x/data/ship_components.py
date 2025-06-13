@@ -10,7 +10,7 @@ from pathlib import Path
 import logging
 
 from pyaurora4x.core.models import ShipComponent, ShipDesign
-from pyaurora4x.core.enums import ComponentType, ShipType
+from pyaurora4x.core.enums import ShipType
 
 logger = logging.getLogger(__name__)
 

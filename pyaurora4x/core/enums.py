@@ -4,7 +4,7 @@ Enumerations and constants for PyAurora 4X
 Defines the various types and statuses used throughout the game.
 """
 
-from enum import Enum, auto
+from enum import Enum
 
 
 class PlanetType(Enum):

@@ -4,9 +4,8 @@ Event system for PyAurora 4X
 Manages game events, notifications, and event-driven gameplay mechanics.
 """
 
-from typing import Dict, List, Any, Callable, Optional
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
 import logging
 from enum import Enum
 

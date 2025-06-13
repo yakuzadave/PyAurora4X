@@ -5,7 +5,7 @@ Common mathematical and helper functions used throughout the game.
 """
 
 import math
-from typing import List, Tuple, Optional, Any, Dict
+from typing import List, Tuple, Any, Dict
 import random
 import logging
 

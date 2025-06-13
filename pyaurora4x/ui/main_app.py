@@ -5,17 +5,14 @@ Provides the terminal-based user interface for the game.
 """
 
 from typing import Optional, Dict, Any
-import asyncio
 import logging
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import (
-    Header, Footer, Button, Static, Log, Placeholder,
-    DataTable, ProgressBar, Label
+    Header, Footer, Button, Static, Log, Label
 )
 from textual.binding import Binding
-from textual.reactive import reactive
 from textual import events
 
 from pyaurora4x.engine.simulation import GameSimulation

@@ -6,10 +6,9 @@ Tests the core game simulation logic and state management.
 
 from unittest.mock import Mock, patch
 
-import pytest
 
 from pyaurora4x.core.enums import FleetStatus, PlanetType, StarType
-from pyaurora4x.core.models import Empire, Fleet, Planet, StarSystem, Vector3D
+from pyaurora4x.core.models import Planet, StarSystem, Vector3D
 from pyaurora4x.engine.simulation import GameSimulation
 
 
