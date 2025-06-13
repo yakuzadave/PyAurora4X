@@ -74,8 +74,10 @@ pytest -q
 
 
 ## Documentation
-All additional markdown documents are stored in the `docs` directory.
-When adding new documentation, create a markdown file in `docs/` and reference it from the README or AGENTS.md.
+Additional markdown documents are stored in the `docs` directory.
+See [docs/README.md](docs/README.md) for an index of available files and
+guidelines on contributing new documentation. Remember to link any new
+markdown files from both that index and this README when appropriate.
 
 ## License
 
