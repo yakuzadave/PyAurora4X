@@ -74,10 +74,10 @@ pytest -q
 
 
 ## Documentation
-Additional markdown documents are stored in the `docs` directory.
-See [docs/README.md](docs/README.md) for an index of available files and
-guidelines on contributing new documentation. Remember to link any new
-markdown files from both that index and this README when appropriate.
+Additional markdown resources are stored in the `docs` directory.
+See [docs/README.md](docs/README.md) for an overview of available files,
+a table of contents, and instructions on contributing new documentation.
+Remember to add new markdown files to that index and mention them here when appropriate.
 
 ## License
 
