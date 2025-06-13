@@ -9,12 +9,19 @@ import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import logging
+import random
+
 
 from pyaurora4x.core.models import Empire, StarSystem, Fleet, Technology, Planet, Vector3D
+
+
+from pyaurora4x.core.enums import FleetStatus, TechnologyType, PlanetType
+
 from pyaurora4x.core.events import EventManager, GameEvent
 from pyaurora4x.engine.scheduler import GameScheduler
 from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
+
 from pyaurora4x.core.enums import PlanetType
 from pyaurora4x.data.tech_tree import TechTreeManager
 
@@ -122,10 +129,25 @@ class GameSimulation:
             )
 
         home_planet = None
+
         for planet in home_system.planets:
             if planet.planet_type == "terrestrial":
                 home_planet = planet
                 break
+
+
+        if not home_system.planets:
+            default_planet = Planet(
+                name="Homeworld",
+                planet_type=PlanetType.TERRESTRIAL,
+                mass=1.0,
+                radius=1.0,
+                surface_temperature=288.0,
+                orbital_distance=1.0,
+                orbital_period=1.0,
+                position=Vector3D(),
+            )
+            home_system.planets.append(default_planet)
 
         if not home_planet:
             home_planet = home_system.planets[0]
@@ -248,8 +270,6 @@ class GameSimulation:
     
     def _process_ai_empire(self, empire: Empire) -> None:
         """Process AI decisions for a single empire."""
-        # Simple AI: just log that we're processing
-        # TODO: Implement actual AI logic
         logger.debug(f"Processing AI for empire: {empire.name}")
 
     def _process_research(self, delta_seconds: float) -> None:
@@ -270,6 +290,52 @@ class GameSimulation:
                 tech.is_researched = True
                 empire.current_research = None
                 empire.research_points = 0
+
+        # === Fleet Movement ===
+        for fleet_id in empire.fleets:
+            fleet = self.fleets.get(fleet_id)
+            if not fleet or fleet.status != FleetStatus.IDLE:
+                continue
+
+            system = self.star_systems.get(fleet.system_id)
+            if not system or not system.planets:
+                continue
+
+            target = random.choice(system.planets)
+            fleet.destination = target.position.copy()
+            fleet.estimated_arrival = self.current_time + 3600.0  # 1 hour ETA
+            fleet.current_orders.append(f"Move to {target.name}")
+            fleet.status = FleetStatus.MOVING
+            logger.debug(
+                f"{fleet.name} ordered to move to {target.name} in {system.name}"
+            )
+
+        # === Research Priorities ===
+        if empire.current_research:
+            tech = empire.technologies.get(empire.current_research)
+            if tech and not tech.is_researched:
+                empire.research_points += 5.0
+                if empire.research_points >= tech.research_cost:
+                    tech.is_researched = True
+                    empire.current_research = None
+                    empire.research_points = 0.0
+                    logger.debug(f"{empire.name} completed research on {tech.name}")
+        if not empire.current_research:
+            available = [
+                t
+                for t in self.tech_manager.technologies.values()
+                if t.id not in empire.technologies or not empire.technologies[t.id].is_researched
+            ]
+            if available:
+                chosen = random.choice(available)
+                empire.technologies[chosen.id] = chosen
+                empire.current_research = chosen.id
+                empire.research_points = 0.0
+                empire.research_allocation = {chosen.tech_type: 100.0}
+                logger.debug(
+                    f"{empire.name} started researching {chosen.name}"
+                )
+
     
     def pause(self) -> None:
         """Pause the game simulation."""

@@ -26,3 +26,4 @@ The game requires several Python packages. Install them using:
 
 ```bash
 pip install textual rich pydantic numpy tinydb
+```

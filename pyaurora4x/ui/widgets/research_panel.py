@@ -320,6 +320,10 @@ class ResearchPanel(Static):
             if self.current_tech:
                 self._update_tech_details()
 
+    def refresh(self) -> None:
+        """Refresh research information."""
+        self._update_display()
+
 
 class ResearchCommandEvent:
     """Event for research commands."""

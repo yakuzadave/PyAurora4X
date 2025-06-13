@@ -203,10 +203,10 @@ class PyAurora4XApp(App):
         """Initialize the application after mounting."""
         self.title = "PyAurora 4X - Terminal Space Strategy"
         self.sub_title = "A Python-based 4X game with realistic orbital mechanics"
-        
-        # Define custom CSS as a class attribute instead of runtime update
-        pass
-        
+
+        # Periodic UI refresh so widgets stay up to date
+        self.set_interval(1.0, self._on_tick)
+
         logger.info("PyAurora 4X application started")
     
     def on_ready(self) -> None:
@@ -253,7 +253,9 @@ class PyAurora4XApp(App):
         system_view = self.query_one("#system_view", StarSystemView)
         if self.simulation.star_systems:
             first_system = list(self.simulation.star_systems.values())[0]
-            system_view.update_system(first_system)
+            system_fleets = [f for f in self.simulation.fleets.values() if f.system_id == first_system.id]
+            system_view.update_system(first_system, system_fleets)
+        system_view.refresh_positions()
         
         # Update fleet panel
         fleet_panel = self.query_one("#fleet_view", FleetPanel)
@@ -261,12 +263,14 @@ class PyAurora4XApp(App):
         if player_empire:
             fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
             fleet_panel.update_fleets(fleets)
+        fleet_panel.refresh()
         
         # Update research panel
         research_panel = self.query_one("#research_view", ResearchPanel)
         if player_empire:
             research_panel.tech_manager = self.simulation.tech_manager
             research_panel.update_empire(player_empire)
+        research_panel.refresh()
         
         # Update empire stats
         empire_stats = self.query_one("#empire_stats", EmpireStatsWidget)
@@ -279,6 +283,19 @@ class PyAurora4XApp(App):
             self.simulation.current_time,
             self.simulation.is_paused
         )
+
+    def _on_tick(self) -> None:
+        """Periodic refresh callback."""
+        if not self.simulation:
+            return
+
+        if not self.simulation.is_paused:
+            current_time = self.simulation.current_time
+            if current_time - self.last_auto_save > self.auto_save_interval:
+                self.action_save_game()
+                self.last_auto_save = current_time
+
+        self._update_all_widgets()
     
     def on_time_control_event(self, event: TimeControlEvent) -> None:
         """Handle time control events."""
@@ -384,8 +401,26 @@ class PyAurora4XApp(App):
     
     def on_key(self, event: events.Key) -> None:
         """Handle key presses."""
-        # Let the binding system handle most keys
-        pass
+        key = event.key
+        if key == "1":
+            self.action_show_systems()
+        elif key == "2":
+            self.action_show_fleets()
+        elif key == "3":
+            self.action_show_research()
+        elif key == "q":
+            self.action_quit()
+        elif key == "s":
+            self.action_save_game()
+        elif key == "l":
+            self.action_load_game()
+        elif key == "h":
+            self.action_show_help()
+        elif key == "space":
+            self.action_toggle_pause()
+        else:
+            return
+        event.prevent_default()
     
     async def action_quit(self) -> None:
         """Quit the application."""
