@@ -41,3 +41,19 @@ def test_duckdb_backend(tmp_path):
     manager = SaveManager(save_directory=str(tmp_path), use_duckdb=True)
     assert manager.use_duckdb
     _run_cycle(manager, "duckdb_save")
+
+
+def test_list_and_load_specific_save(tmp_path):
+    manager = SaveManager(save_directory=str(tmp_path), use_duckdb=False)
+
+    data1 = {"value": 1}
+    data2 = {"value": 2}
+    manager.save_game(data1, "first")
+    manager.save_game(data2, "second")
+
+    saves = manager.list_saves()
+    names = {s["save_name"] for s in saves}
+    assert {"first", "second"} <= names
+
+    loaded = manager.load_game("second")
+    assert loaded == data2

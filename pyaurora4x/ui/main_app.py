@@ -23,6 +23,7 @@ from pyaurora4x.ui.widgets.star_system_view import StarSystemView
 from pyaurora4x.ui.widgets.fleet_panel import FleetPanel
 from pyaurora4x.ui.widgets.research_panel import ResearchPanel
 from pyaurora4x.ui.widgets.empire_stats import EmpireStatsWidget
+from pyaurora4x.ui.widgets.load_dialog import LoadGameDialog
 from pyaurora4x.data.save_manager import SaveManager
 
 logger = logging.getLogger(__name__)
@@ -149,9 +150,16 @@ class PyAurora4XApp(App):
         padding: 1;
         border: solid $accent;
     }
-    
+
     Button {
         margin: 0 1;
+    }
+
+    #load_dialog {
+        align: center middle;
+        padding: 2;
+        border: solid $accent;
+        background: $panel;
     }
     """
     
@@ -337,38 +345,24 @@ class PyAurora4XApp(App):
             logger.error(f"Error saving game: {e}")
     
     def action_load_game(self) -> None:
-        """Load a saved game from the saves directory."""
+        """Show a dialog to load a saved game."""
         message_log = self.query_one("#message_log", Log)
 
-        # Get available saves using the save manager
         saves = self.save_manager.list_saves()
-
         if not saves:
             message_log.write_line("No saved games found.")
             return
 
-        # Display saves with an index
-        message_log.write_line("Available saves:")
-        for idx, meta in enumerate(saves, start=1):
-            date = meta.get("save_date", "")
-            message_log.write_line(f"  {idx}. {meta['save_name']} {date}")
+        def _on_select(save_name: str) -> None:
+            try:
+                game_data = self.save_manager.load_game(save_name)
+                self.load_game_data(game_data)
+                message_log.write_line(f"Loaded save '{save_name}'.")
+            except Exception as e:
+                message_log.write_line(f"Failed to load save '{save_name}': {e}")
 
-        try:
-            selection = input("Select save number: ").strip()
-            index = int(selection)
-            if index < 1 or index > len(saves):
-                raise ValueError
-        except Exception:
-            message_log.write_line("Invalid selection. Load cancelled.")
-            return
-
-        save_name = saves[index - 1]["save_name"]
-        try:
-            game_data = self.save_manager.load_game(save_name)
-            self.load_game_data(game_data)
-            message_log.write_line(f"Loaded save '{save_name}'.")
-        except Exception as e:
-            message_log.write_line(f"Failed to load save '{save_name}': {e}")
+        dialog = LoadGameDialog(saves, _on_select)
+        self.mount(dialog)
     
     def action_show_systems(self) -> None:
         """Show the star systems view."""
