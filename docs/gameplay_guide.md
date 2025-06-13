@@ -20,6 +20,7 @@ Navigate between elements with the arrow keys or `j`/`k`. Press `Enter` to activ
 - `s` – save the current game
 - `q` – quit to the terminal
 - `?` – open the help screen
+- `F1`–`F5` – focus the first five fleets for quick selection
 
 Other shortcuts appear at the bottom of the UI when available.
 
