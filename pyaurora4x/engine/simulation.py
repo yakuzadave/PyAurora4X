@@ -10,11 +10,13 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import logging
 
-from pyaurora4x.core.models import Empire, StarSystem, Fleet
+from pyaurora4x.core.models import Empire, StarSystem, Fleet, Technology, Planet, Vector3D
 from pyaurora4x.core.events import EventManager, GameEvent
 from pyaurora4x.engine.scheduler import GameScheduler
 from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
+from pyaurora4x.core.enums import PlanetType
+from pyaurora4x.data.tech_tree import TechTreeManager
 
 logger = logging.getLogger(__name__)
 
@@ -38,18 +40,26 @@ class GameSimulation:
         self.empires: Dict[str, Empire] = {}
         self.star_systems: Dict[str, StarSystem] = {}
         self.fleets: Dict[str, Fleet] = {}
-        
+
         # Game systems
         self.scheduler = GameScheduler()
         self.event_manager = EventManager()
         self.orbital_mechanics = OrbitalMechanics()
         self.system_generator = StarSystemGenerator()
+        self.tech_manager = TechTreeManager()
         
         # Game state
         self.is_running = False
         self.is_paused = False
-        
+
         logger.info("Game simulation initialized")
+
+    def _get_initial_empire_technologies(self) -> Dict[str, Technology]:
+        """Create a fresh copy of all technologies for a new empire."""
+        techs = {}
+        for tech_id, tech in self.tech_manager.get_all_technologies().items():
+            techs[tech_id] = Technology(**tech.dict())
+        return techs
     
     def initialize_new_game(self, num_systems: int = 3, num_empires: int = 2) -> None:
         """
@@ -69,10 +79,10 @@ class GameSimulation:
         
         # Generate star systems
         self._generate_star_systems(num_systems)
-        
+
         # Create player empire
         self._create_player_empire()
-        
+
         # Create AI empires
         self._create_ai_empires(num_empires - 1)
         
@@ -96,15 +106,29 @@ class GameSimulation:
         """Create the player's empire."""
         # Find a suitable home system
         home_system = list(self.star_systems.values())[0]
+
+        if not home_system.planets:
+            home_system.planets.append(
+                Planet(
+                    name="Home",
+                    planet_type=PlanetType.TERRESTRIAL,
+                    mass=1.0,
+                    radius=1.0,
+                    surface_temperature=288.0,
+                    orbital_distance=1.0,
+                    orbital_period=1.0,
+                    position=Vector3D(),
+                )
+            )
+
         home_planet = None
-        
         for planet in home_system.planets:
             if planet.planet_type == "terrestrial":
                 home_planet = planet
                 break
-        
+
         if not home_planet:
-            home_planet = home_system.planets[0]  # Fallback to first planet
+            home_planet = home_system.planets[0]
         
         # Create player empire
         player_empire = Empire(
@@ -114,6 +138,7 @@ class GameSimulation:
             home_system_id=home_system.id,
             home_planet_id=home_planet.id
         )
+        player_empire.technologies = self._get_initial_empire_technologies()
         
         # Create initial fleet
         initial_fleet = Fleet(
@@ -148,6 +173,7 @@ class GameSimulation:
                 home_system_id=system.id,
                 home_planet_id=home_planet.id
             )
+            ai_empire.technologies = self._get_initial_empire_technologies()
             
             # Create initial fleet for AI
             ai_fleet = Fleet(
@@ -203,6 +229,9 @@ class GameSimulation:
         
         # Process any queued events
         self.event_manager.process_events()
+
+        # Research progression
+        self._process_research(delta_seconds)
         
         logger.debug(f"Advanced time by {delta_seconds}s to {self.current_time}")
     
@@ -222,6 +251,25 @@ class GameSimulation:
         # Simple AI: just log that we're processing
         # TODO: Implement actual AI logic
         logger.debug(f"Processing AI for empire: {empire.name}")
+
+    def _process_research(self, delta_seconds: float) -> None:
+        """Advance research progress for all empires."""
+        for empire in self.empires.values():
+            tech_id = empire.current_research
+            if not tech_id:
+                continue
+
+            tech = empire.technologies.get(tech_id)
+            if not tech:
+                continue
+
+            # Simple research rate: 1 RP per second
+            empire.research_points += delta_seconds
+
+            if empire.research_points >= tech.research_cost:
+                tech.is_researched = True
+                empire.current_research = None
+                empire.research_points = 0
     
     def pause(self) -> None:
         """Pause the game simulation."""

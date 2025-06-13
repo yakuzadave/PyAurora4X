@@ -25,11 +25,12 @@ class ResearchPanel(Static):
     empire = reactive(None)
     selected_tech = reactive(None)
     
-    def __init__(self, **kwargs):
+    def __init__(self, tech_manager=None, **kwargs):
         super().__init__(**kwargs)
         self.current_empire: Optional[Empire] = None
         self.current_tech: Optional[Technology] = None
         self.available_techs: List[Technology] = []
+        self.tech_manager = tech_manager
     
     def compose(self) -> ComposeResult:
         """Compose the research panel layout."""
@@ -72,6 +73,13 @@ class ResearchPanel(Static):
             empire: Empire to display research for
         """
         self.current_empire = empire
+        # Ensure empire has technologies loaded
+        if not self.current_empire.technologies and self.tech_manager:
+            self.current_empire.technologies = {
+                tid: Technology(**t.dict())
+                for tid, t in self.tech_manager.get_all_technologies().items()
+            }
+
         self._load_available_technologies()
         self._refresh_tech_table()
         self._update_research_status()
@@ -87,74 +95,8 @@ class ResearchPanel(Static):
             self.available_techs = []
             return
         
-        # For now, create some basic technologies
-        # In a full implementation, this would load from tech tree data
-        self.available_techs = []
-        
-        # Check existing technologies
-        for tech_id, tech in self.current_empire.technologies.items():
-            self.available_techs.append(tech)
-        
-        # Add some default technologies if none exist
-        if not self.available_techs:
-            self.available_techs = self._create_default_technologies()
+        self.available_techs = list(self.current_empire.technologies.values())
     
-    def _create_default_technologies(self) -> List[Technology]:
-        """Create default technologies for demonstration."""
-        default_techs = [
-            Technology(
-                id="basic_propulsion",
-                name="Basic Propulsion",
-                description="Fundamental rocket technology for interplanetary travel.",
-                tech_type=TechnologyType.PROPULSION,
-                research_cost=100,
-                prerequisites=[],
-                unlocks=["advanced_propulsion"],
-                is_researched=False
-            ),
-            Technology(
-                id="basic_sensors",
-                name="Basic Sensors",
-                description="Basic detection and navigation systems.",
-                tech_type=TechnologyType.SENSORS,
-                research_cost=80,
-                prerequisites=[],
-                unlocks=["advanced_sensors"],
-                is_researched=False
-            ),
-            Technology(
-                id="basic_energy",
-                name="Basic Energy Systems",
-                description="Fundamental power generation and storage.",
-                tech_type=TechnologyType.ENERGY,
-                research_cost=120,
-                prerequisites=[],
-                unlocks=["fusion_power"],
-                is_researched=False
-            ),
-            Technology(
-                id="basic_construction",
-                name="Basic Construction",
-                description="Space-based construction and manufacturing.",
-                tech_type=TechnologyType.CONSTRUCTION,
-                research_cost=90,
-                prerequisites=[],
-                unlocks=["advanced_construction"],
-                is_researched=False
-            ),
-            Technology(
-                id="basic_weapons",
-                name="Basic Weapons",
-                description="Defensive and offensive space weaponry.",
-                tech_type=TechnologyType.WEAPONS,
-                research_cost=150,
-                prerequisites=["basic_energy"],
-                unlocks=["missile_systems"],
-                is_researched=False
-            )
-        ]
-        
-        return default_techs
     
     def _refresh_tech_table(self) -> None:
         """Refresh the technology table with current data."""

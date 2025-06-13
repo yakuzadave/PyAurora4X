@@ -151,17 +151,20 @@ class OrbitalMechanics:
                 planet_data = system_data['planets'][i]
                 
                 # Calculate mean motion (radians per second)
-                period_seconds = planet_data['orbital_period'] * 365.25 * 24 * 3600
+                period_seconds = planet_data['orbital_period']
                 mean_motion = 2 * np.pi / period_seconds
                 
                 # Calculate mean anomaly at current time
                 mean_anomaly = (mean_motion * current_time) % (2 * np.pi)
                 
-                # For simplicity, assume circular orbits (e = 0)
-                true_anomaly = mean_anomaly
-                
-                # Calculate position in orbital plane
-                r = planet_data['orbital_distance'] * 149597870.7  # Convert AU to km
+                e = planet_data.get('eccentricity', 0.0)
+                E = mean_anomaly
+                for _ in range(5):
+                    E = mean_anomaly + e * np.sin(E)
+                a = planet_data['orbital_distance'] * 149597870.7
+                r = a * (1 - e * np.cos(E))
+                true_anomaly = 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2),
+                                             np.sqrt(1 - e) * np.cos(E / 2))
                 x = r * np.cos(true_anomaly)
                 y = r * np.sin(true_anomaly)
                 z = 0.0

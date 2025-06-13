@@ -265,6 +265,7 @@ class PyAurora4XApp(App):
         # Update research panel
         research_panel = self.query_one("#research_view", ResearchPanel)
         if player_empire:
+            research_panel.tech_manager = self.simulation.tech_manager
             research_panel.update_empire(player_empire)
         
         # Update empire stats
