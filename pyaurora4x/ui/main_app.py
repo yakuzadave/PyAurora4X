@@ -168,6 +168,11 @@ class PyAurora4XApp(App):
         Binding("1", "show_systems", "Systems"),
         Binding("2", "show_fleets", "Fleets"),
         Binding("3", "show_research", "Research"),
+        Binding("f1", "focus_fleet_1", "Fleet 1"),
+        Binding("f2", "focus_fleet_2", "Fleet 2"),
+        Binding("f3", "focus_fleet_3", "Fleet 3"),
+        Binding("f4", "focus_fleet_4", "Fleet 4"),
+        Binding("f5", "focus_fleet_5", "Fleet 5"),
         Binding("h", "show_help", "Help"),
     ]
     
@@ -372,6 +377,27 @@ class PyAurora4XApp(App):
     def action_show_research(self) -> None:
         """Show the research view."""
         self._switch_view("research")
+
+    def _focus_fleet_index(self, index: int) -> None:
+        """Focus and highlight a fleet by index."""
+        self._switch_view("fleets")
+        fleet_panel = self.query_one("#fleet_view", FleetPanel)
+        fleet_panel.highlight_fleet(index)
+
+    def action_focus_fleet_1(self) -> None:
+        self._focus_fleet_index(0)
+
+    def action_focus_fleet_2(self) -> None:
+        self._focus_fleet_index(1)
+
+    def action_focus_fleet_3(self) -> None:
+        self._focus_fleet_index(2)
+
+    def action_focus_fleet_4(self) -> None:
+        self._focus_fleet_index(3)
+
+    def action_focus_fleet_5(self) -> None:
+        self._focus_fleet_index(4)
     
     def _switch_view(self, view_name: str) -> None:
         """Switch between different main views."""
@@ -405,6 +431,7 @@ class PyAurora4XApp(App):
         message_log.write_line("  1 - Show star systems")
         message_log.write_line("  2 - Show fleets")
         message_log.write_line("  3 - Show research")
+        message_log.write_line("  F1-F5 - Focus fleets 1-5")
         message_log.write_line("  h - Show this help")
     
     async def on_timer(self, event) -> None:
@@ -436,6 +463,16 @@ class PyAurora4XApp(App):
             self.action_load_game()
         elif key == "h":
             self.action_show_help()
+        elif key == "f1":
+            self.action_focus_fleet_1()
+        elif key == "f2":
+            self.action_focus_fleet_2()
+        elif key == "f3":
+            self.action_focus_fleet_3()
+        elif key == "f4":
+            self.action_focus_fleet_4()
+        elif key == "f5":
+            self.action_focus_fleet_5()
         elif key == "space":
             self.action_toggle_pause()
         else:

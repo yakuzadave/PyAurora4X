@@ -289,6 +289,24 @@ class FleetPanel(Static):
         """Refresh fleet information."""
         self._update_display()
 
+    def highlight_fleet(self, index: int) -> None:
+        """Highlight a fleet in the table by its index."""
+        if not self.fleet_list:
+            return
+        if index < 0 or index >= len(self.fleet_list):
+            return
+
+        fleet = self.fleet_list[index]
+        table = self.query_one("#fleet_table", DataTable)
+
+        try:
+            row_index = table.get_row_index(fleet.id)
+        except Exception:
+            row_index = index
+
+        table.cursor_coordinate = (row_index, 0)
+        table.action_select_cursor()
+
 
 class FleetCommandEvent:
     """Event for fleet commands."""
