@@ -72,6 +72,12 @@ Execute the unit tests with pytest:
 pytest -q
 ```
 
+
+## Documentation
+All additional markdown documents are stored in the `docs` directory.
+When adding new documentation, create a markdown file in `docs/` and reference it from the README or AGENTS.md.
+
 ## License
 
 PyAurora 4X is released under the [MIT License](LICENSE).
+
