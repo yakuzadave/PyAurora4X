@@ -1,0 +1,423 @@
+{
+  "version": "1.0",
+  "created_date": "2024-01-01",
+  "description": "Technology tree for PyAurora 4X - defines research paths and prerequisites",
+  "technologies": {
+    "basic_propulsion": {
+      "name": "Basic Propulsion",
+      "description": "Chemical rockets and basic thrust systems for interplanetary travel. Forms the foundation of space exploration.",
+      "type": "propulsion",
+      "research_cost": 100,
+      "prerequisites": [],
+      "unlocks": ["advanced_propulsion", "fuel_efficiency", "chemical_thrusters"]
+    },
+    "advanced_propulsion": {
+      "name": "Advanced Propulsion",
+      "description": "Ion drives and nuclear thermal propulsion systems. More efficient than chemical rockets for long-distance travel.",
+      "type": "propulsion",
+      "research_cost": 250,
+      "prerequisites": ["basic_propulsion", "basic_energy"],
+      "unlocks": ["fusion_drive", "ion_drives", "nuclear_thermal"]
+    },
+    "fusion_drive": {
+      "name": "Fusion Drive",
+      "description": "Fusion-powered spacecraft propulsion systems. Extremely high specific impulse for fast interplanetary travel.",
+      "type": "propulsion",
+      "research_cost": 500,
+      "prerequisites": ["advanced_propulsion", "fusion_power"],
+      "unlocks": ["antimatter_drive", "fusion_ramjets"]
+    },
+    "antimatter_drive": {
+      "name": "Antimatter Drive",
+      "description": "The ultimate propulsion technology using matter-antimatter annihilation for unprecedented thrust and efficiency.",
+      "type": "propulsion",
+      "research_cost": 1000,
+      "prerequisites": ["fusion_drive", "particle_physics"],
+      "unlocks": ["warp_drive_theory"]
+    },
+    "fuel_efficiency": {
+      "name": "Fuel Efficiency",
+      "description": "Advanced fuel management and combustion optimization techniques to extend mission range.",
+      "type": "propulsion",
+      "research_cost": 150,
+      "prerequisites": ["basic_propulsion"],
+      "unlocks": ["advanced_fuel_systems", "hybrid_engines"]
+    },
+    "basic_energy": {
+      "name": "Basic Energy Systems",
+      "description": "Solar panels and chemical batteries for power generation. Essential for any space mission.",
+      "type": "energy",
+      "research_cost": 80,
+      "prerequisites": [],
+      "unlocks": ["nuclear_power", "energy_storage", "solar_efficiency"]
+    },
+    "nuclear_power": {
+      "name": "Nuclear Power",
+      "description": "Fission reactors for high-output power generation. Enables deep space missions beyond solar range.",
+      "type": "energy",
+      "research_cost": 200,
+      "prerequisites": ["basic_energy"],
+      "unlocks": ["fusion_power", "radioisotope_generators", "reactor_safety"]
+    },
+    "fusion_power": {
+      "name": "Fusion Power",
+      "description": "Fusion reactors for clean, high-efficiency power. The key to advanced space technologies.",
+      "type": "energy",
+      "research_cost": 400,
+      "prerequisites": ["nuclear_power", "magnetic_confinement"],
+      "unlocks": ["zero_point_energy", "helium3_fusion", "compact_fusion"]
+    },
+    "zero_point_energy": {
+      "name": "Zero Point Energy",
+      "description": "Theoretical extraction of energy from quantum vacuum fluctuations. Revolutionary power source.",
+      "type": "energy",
+      "research_cost": 800,
+      "prerequisites": ["fusion_power", "quantum_physics"],
+      "unlocks": ["infinite_energy"]
+    },
+    "energy_storage": {
+      "name": "Energy Storage",
+      "description": "Advanced battery technologies and energy storage systems for reliable power management.",
+      "type": "energy",
+      "research_cost": 120,
+      "prerequisites": ["basic_energy"],
+      "unlocks": ["supercapacitors", "quantum_batteries"]
+    },
+    "basic_sensors": {
+      "name": "Basic Sensors",
+      "description": "Optical and radio telescopes for basic detection and navigation. Eyes and ears of space exploration.",
+      "type": "sensors",
+      "research_cost": 75,
+      "prerequisites": [],
+      "unlocks": ["advanced_sensors", "deep_space_tracking", "sensor_arrays"]
+    },
+    "advanced_sensors": {
+      "name": "Advanced Sensors",
+      "description": "Gravitational wave detectors and advanced imaging systems for precise space surveillance.",
+      "type": "sensors",
+      "research_cost": 180,
+      "prerequisites": ["basic_sensors", "basic_computing"],
+      "unlocks": ["quantum_sensors", "stealth_detection", "long_range_scanning"]
+    },
+    "quantum_sensors": {
+      "name": "Quantum Sensors",
+      "description": "Quantum entanglement-based sensors for instantaneous detection across vast distances.",
+      "type": "sensors",
+      "research_cost": 350,
+      "prerequisites": ["advanced_sensors", "quantum_physics"],
+      "unlocks": ["omniscient_sensors", "quantum_radar"]
+    },
+    "deep_space_tracking": {
+      "name": "Deep Space Tracking",
+      "description": "Long-range tracking systems for monitoring objects throughout the solar system.",
+      "type": "sensors",
+      "research_cost": 140,
+      "prerequisites": ["basic_sensors"],
+      "unlocks": ["interstellar_tracking", "navigation_beacons"]
+    },
+    "basic_computing": {
+      "name": "Basic Computing",
+      "description": "Digital computers and basic AI systems for ship automation and data processing.",
+      "type": "computing",
+      "research_cost": 90,
+      "prerequisites": [],
+      "unlocks": ["advanced_computing", "ai_systems", "automation"]
+    },
+    "advanced_computing": {
+      "name": "Advanced Computing",
+      "description": "Quantum computers and neural networks for complex calculations and decision making.",
+      "type": "computing",
+      "research_cost": 220,
+      "prerequisites": ["basic_computing"],
+      "unlocks": ["quantum_computing", "artificial_intelligence", "expert_systems"]
+    },
+    "quantum_computing": {
+      "name": "Quantum Computing",
+      "description": "Quantum processors capable of solving previously impossible computational problems.",
+      "type": "computing",
+      "research_cost": 400,
+      "prerequisites": ["advanced_computing", "quantum_physics"],
+      "unlocks": ["quantum_supremacy", "universal_computation"]
+    },
+    "artificial_intelligence": {
+      "name": "Artificial Intelligence",
+      "description": "True AI systems capable of independent thought and decision making.",
+      "type": "computing",
+      "research_cost": 350,
+      "prerequisites": ["advanced_computing", "neural_networks"],
+      "unlocks": ["strong_ai", "ai_companions", "autonomous_fleets"]
+    },
+    "ai_systems": {
+      "name": "AI Systems",
+      "description": "Expert systems and machine learning for automated ship operations and tactical analysis.",
+      "type": "computing",
+      "research_cost": 160,
+      "prerequisites": ["basic_computing"],
+      "unlocks": ["tactical_ai", "navigation_ai", "resource_ai"]
+    },
+    "basic_weapons": {
+      "name": "Basic Weapons",
+      "description": "Kinetic projectiles and basic laser systems for ship defense and offense.",
+      "type": "weapons",
+      "research_cost": 120,
+      "prerequisites": ["basic_energy"],
+      "unlocks": ["missile_systems", "beam_weapons", "kinetic_weapons"]
+    },
+    "missile_systems": {
+      "name": "Missile Systems",
+      "description": "Guided missiles and torpedo systems with improved accuracy and payload delivery.",
+      "type": "weapons",
+      "research_cost": 200,
+      "prerequisites": ["basic_weapons", "basic_sensors"],
+      "unlocks": ["smart_missiles", "nuclear_missiles", "swarm_missiles"]
+    },
+    "beam_weapons": {
+      "name": "Beam Weapons",
+      "description": "High-energy laser and particle beam weapons for precision strikes.",
+      "type": "weapons",
+      "research_cost": 250,
+      "prerequisites": ["basic_weapons", "advanced_energy"],
+      "unlocks": ["plasma_weapons", "particle_cannons", "death_rays"]
+    },
+    "smart_missiles": {
+      "name": "Smart Missiles",
+      "description": "AI-guided missiles capable of complex maneuvering and target recognition.",
+      "type": "weapons",
+      "research_cost": 300,
+      "prerequisites": ["missile_systems", "ai_systems"],
+      "unlocks": ["adaptive_missiles", "hive_mind_missiles"]
+    },
+    "plasma_weapons": {
+      "name": "Plasma Weapons",
+      "description": "Contained plasma projectiles and streams for devastating close-range combat.",
+      "type": "weapons",
+      "research_cost": 400,
+      "prerequisites": ["beam_weapons", "magnetic_confinement"],
+      "unlocks": ["stellar_plasma_cannons", "plasma_storms"]
+    },
+    "basic_shields": {
+      "name": "Basic Shields",
+      "description": "Electromagnetic field generators for deflecting incoming projectiles and energy weapons.",
+      "type": "shields",
+      "research_cost": 150,
+      "prerequisites": ["basic_energy", "magnetic_confinement"],
+      "unlocks": ["advanced_shields", "adaptive_shields", "shield_harmonics"]
+    },
+    "advanced_shields": {
+      "name": "Advanced Shields",
+      "description": "Multi-layered shield systems with improved efficiency and coverage.",
+      "type": "shields",
+      "research_cost": 300,
+      "prerequisites": ["basic_shields", "advanced_energy"],
+      "unlocks": ["phase_shields", "regenerative_shields", "shield_matrices"]
+    },
+    "phase_shields": {
+      "name": "Phase Shields",
+      "description": "Quantum phase-shifted shields that can become intangible to certain attacks.",
+      "type": "shields",
+      "research_cost": 500,
+      "prerequisites": ["advanced_shields", "quantum_physics"],
+      "unlocks": ["dimensional_shields", "reality_anchors"]
+    },
+    "magnetic_confinement": {
+      "name": "Magnetic Confinement",
+      "description": "Magnetic field manipulation and control systems for containing plasma and charged particles.",
+      "type": "physics",
+      "research_cost": 160,
+      "prerequisites": ["basic_energy"],
+      "unlocks": ["fusion_power", "basic_shields", "magnetic_bottles"]
+    },
+    "quantum_physics": {
+      "name": "Quantum Physics",
+      "description": "Understanding of quantum mechanics and its applications to technology.",
+      "type": "physics",
+      "research_cost": 300,
+      "prerequisites": ["advanced_computing", "particle_physics"],
+      "unlocks": ["quantum_sensors", "quantum_computing", "quantum_tunneling"]
+    },
+    "particle_physics": {
+      "name": "Particle Physics",
+      "description": "Study of fundamental particles and their interactions. Key to advanced energy systems.",
+      "type": "physics",
+      "research_cost": 250,
+      "prerequisites": ["nuclear_power", "magnetic_confinement"],
+      "unlocks": ["antimatter_drive", "particle_accelerators", "exotic_matter"]
+    },
+    "exotic_matter": {
+      "name": "Exotic Matter",
+      "description": "Creation and manipulation of exotic matter with unusual properties like negative mass.",
+      "type": "physics",
+      "research_cost": 600,
+      "prerequisites": ["particle_physics", "quantum_physics"],
+      "unlocks": ["warp_drive", "alcubierre_drive", "negative_mass"]
+    },
+    "basic_construction": {
+      "name": "Basic Construction",
+      "description": "Space-based manufacturing and assembly systems for building ships and stations.",
+      "type": "construction",
+      "research_cost": 110,
+      "prerequisites": [],
+      "unlocks": ["automated_construction", "orbital_shipyards", "zero_g_manufacturing"]
+    },
+    "automated_construction": {
+      "name": "Automated Construction",
+      "description": "Robotic construction systems and 3D printing for efficient space-based manufacturing.",
+      "type": "construction",
+      "research_cost": 240,
+      "prerequisites": ["basic_construction", "basic_computing"],
+      "unlocks": ["self_replicating_systems", "molecular_assemblers", "nano_construction"]
+    },
+    "self_replicating_systems": {
+      "name": "Self-Replicating Systems",
+      "description": "Von Neumann machines capable of creating copies of themselves using raw materials.",
+      "type": "construction",
+      "research_cost": 500,
+      "prerequisites": ["automated_construction", "artificial_intelligence"],
+      "unlocks": ["grey_goo_containment", "exponential_expansion"]
+    },
+    "orbital_shipyards": {
+      "name": "Orbital Shipyards",
+      "description": "Large-scale orbital facilities for constructing massive spacecraft and stations.",
+      "type": "construction",
+      "research_cost": 200,
+      "prerequisites": ["basic_construction", "basic_energy"],
+      "unlocks": ["mega_shipyards", "titan_construction", "dyson_sphere_segments"]
+    },
+    "advanced_materials": {
+      "name": "Advanced Materials",
+      "description": "Carbon nanotubes, metamaterials, and other exotic substances with superior properties.",
+      "type": "materials",
+      "research_cost": 180,
+      "prerequisites": ["basic_construction"],
+      "unlocks": ["smart_materials", "programmable_matter", "unobtainium"]
+    },
+    "smart_materials": {
+      "name": "Smart Materials",
+      "description": "Materials that can change their properties in response to environmental stimuli.",
+      "type": "materials",
+      "research_cost": 250,
+      "prerequisites": ["advanced_materials", "basic_computing"],
+      "unlocks": ["adaptive_armor", "shape_shifting_hulls", "living_ships"]
+    },
+    "programmable_matter": {
+      "name": "Programmable Matter",
+      "description": "Matter that can be programmed to take any shape or form on command.",
+      "type": "materials",
+      "research_cost": 400,
+      "prerequisites": ["smart_materials", "nano_technology"],
+      "unlocks": ["universal_matter", "reality_programming"]
+    },
+    "nano_technology": {
+      "name": "Nano Technology",
+      "description": "Manipulation of matter at the molecular and atomic scale for precise control.",
+      "type": "materials",
+      "research_cost": 320,
+      "prerequisites": ["advanced_materials", "quantum_physics"],
+      "unlocks": ["molecular_assemblers", "nano_medicine", "smart_dust"]
+    },
+    "basic_biology": {
+      "name": "Basic Biology",
+      "description": "Understanding of biological systems and their adaptation to space environments.",
+      "type": "biology",
+      "research_cost": 100,
+      "prerequisites": [],
+      "unlocks": ["space_medicine", "genetic_engineering", "terraforming"]
+    },
+    "genetic_engineering": {
+      "name": "Genetic Engineering",
+      "description": "Modification of genetic code to create enhanced organisms and biological systems.",
+      "type": "biology",
+      "research_cost": 200,
+      "prerequisites": ["basic_biology", "basic_computing"],
+      "unlocks": ["designer_organisms", "biological_computers", "enhanced_humans"]
+    },
+    "terraforming": {
+      "name": "Terraforming",
+      "description": "Planetary engineering to make worlds suitable for human habitation.",
+      "type": "biology",
+      "research_cost": 400,
+      "prerequisites": ["basic_biology", "atmospheric_processing"],
+      "unlocks": ["paradise_engineering", "world_building", "ecosystem_design"]
+    },
+    "space_medicine": {
+      "name": "Space Medicine",
+      "description": "Medical techniques and treatments adapted for zero gravity and radiation environments.",
+      "type": "biology",
+      "research_cost": 150,
+      "prerequisites": ["basic_biology"],
+      "unlocks": ["radiation_therapy", "zero_g_surgery", "life_extension"]
+    },
+    "basic_logistics": {
+      "name": "Basic Logistics",
+      "description": "Supply chain management and resource distribution systems for space operations.",
+      "type": "logistics",
+      "research_cost": 90,
+      "prerequisites": [],
+      "unlocks": ["advanced_logistics", "resource_management", "supply_networks"]
+    },
+    "advanced_logistics": {
+      "name": "Advanced Logistics",
+      "description": "Optimized supply chains and automated resource distribution across multiple systems.",
+      "type": "logistics",
+      "research_cost": 200,
+      "prerequisites": ["basic_logistics", "ai_systems"],
+      "unlocks": ["interstellar_commerce", "resource_ai", "quantum_logistics"]
+    },
+    "resource_management": {
+      "name": "Resource Management",
+      "description": "Efficient extraction, processing, and utilization of raw materials.",
+      "type": "logistics",
+      "research_cost": 140,
+      "prerequisites": ["basic_logistics"],
+      "unlocks": ["asteroid_mining", "gas_giant_harvesting", "stellar_engineering"]
+    },
+    "asteroid_mining": {
+      "name": "Asteroid Mining",
+      "description": "Extraction of valuable resources from asteroids and small planetary bodies.",
+      "type": "logistics",
+      "research_cost": 180,
+      "prerequisites": ["resource_management", "basic_propulsion"],
+      "unlocks": ["automated_miners", "mobile_refineries", "belt_colonies"]
+    },
+    "atmospheric_processing": {
+      "name": "Atmospheric Processing",
+      "description": "Large-scale modification of planetary atmospheres for habitability or resource extraction.",
+      "type": "engineering",
+      "research_cost": 250,
+      "prerequisites": ["basic_construction", "basic_biology"],
+      "unlocks": ["terraforming", "weather_control", "climate_engineering"]
+    },
+    "megastructures": {
+      "name": "Megastructures",
+      "description": "Engineering of massive space-based structures like Dyson spheres and ring worlds.",
+      "type": "engineering",
+      "research_cost": 800,
+      "prerequisites": ["orbital_shipyards", "advanced_materials", "fusion_power"],
+      "unlocks": ["dyson_spheres", "ring_worlds", "alderson_disks"]
+    },
+    "faster_than_light": {
+      "name": "Faster Than Light Travel",
+      "description": "Theoretical framework for exceeding the speed of light through space-time manipulation.",
+      "type": "physics",
+      "research_cost": 1000,
+      "prerequisites": ["exotic_matter", "quantum_physics", "space_time_physics"],
+      "unlocks": ["warp_drive", "jump_gates", "teleportation"]
+    },
+    "space_time_physics": {
+      "name": "Space-Time Physics",
+      "description": "Advanced understanding of relativity and space-time curvature for practical applications.",
+      "type": "physics",
+      "research_cost": 600,
+      "prerequisites": ["quantum_physics", "exotic_matter"],
+      "unlocks": ["faster_than_light", "time_dilation_control", "gravity_manipulation"]
+    },
+    "warp_drive": {
+      "name": "Warp Drive",
+      "description": "Alcubierre drive technology for faster-than-light travel by warping space-time.",
+      "type": "propulsion",
+      "research_cost": 1200,
+      "prerequisites": ["faster_than_light", "exotic_matter"],
+      "unlocks": ["galactic_exploration", "interstellar_empire"]
+    }
+  }
+}
