@@ -9,11 +9,18 @@ import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import logging
-import random
+from pyaurora4x.core.models import (
+    Empire,
+    StarSystem,
+    Fleet,
+    Technology,
+    Planet,
+    Vector3D,
+)
 
 
-from pyaurora4x.core.models import Empire, StarSystem, Fleet, Technology, Planet, Vector3D
-
+        techs: Dict[str, Technology] = {}
+            techs[tech_id] = Technology(**tech.model_dump())
 
 from pyaurora4x.core.enums import FleetStatus, TechnologyType, PlanetType
 
@@ -98,7 +105,7 @@ class GameSimulation:
         
         # Schedule initial events
         self._schedule_initial_events()
-        
+            if planet.planet_type == PlanetType.TERRESTRIAL:
         self.is_running = True
         logger.info("New game initialized successfully")
     
@@ -286,9 +293,9 @@ class GameSimulation:
             # Simple research rate: 1 RP per second
             empire.research_points += delta_seconds
 
-            if empire.research_points >= tech.research_cost:
-                tech.is_researched = True
-                empire.current_research = None
+            "empires": {id: empire.model_dump(mode="json") for id, empire in self.empires.items()},
+            "star_systems": {id: system.model_dump(mode="json") for id, system in self.star_systems.items()},
+            "fleets": {id: fleet.model_dump(mode="json") for id, fleet in self.fleets.items()},
                 empire.research_points = 0
 
         # === Fleet Movement ===
