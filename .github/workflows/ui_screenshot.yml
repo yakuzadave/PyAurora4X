@@ -1,0 +1,30 @@
+name: UI Screenshot
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ui_screenshot.yml'
+      - 'scripts/generate_ui_screenshot.py'
+      - 'pyaurora4x/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install . cairosvg
+      - name: Generate screenshot
+        run: |
+          python scripts/generate_ui_screenshot.py --output ui_example.svg
+          cairosvg ui_example.svg -o ui_example.png
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ui_screenshot
+          path: ui_example.png
