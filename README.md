@@ -72,6 +72,17 @@ Execute the unit tests with pytest:
 pytest -q
 ```
 
+### Pre-commit Hooks
+
+Install the `pre-commit` tool and set up the git hooks:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+The hooks will automatically format code with **black**, lint with **ruff**,
+and type-check with **mypy** every time you commit.
 
 ## Documentation
 Additional markdown documents are stored in the `docs` directory.
