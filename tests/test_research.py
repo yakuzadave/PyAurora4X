@@ -32,6 +32,7 @@ def test_research_persistence(tmp_path):
 
     manager = SaveManager(save_directory=str(tmp_path))
     manager.use_tinydb = False
+    manager.use_duckdb = False
     save_file = manager.save_game(sim.get_game_state(), "save1")
     loaded = manager.load_game(save_file)
 
