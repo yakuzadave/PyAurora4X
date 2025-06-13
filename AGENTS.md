@@ -16,7 +16,7 @@ Install the dependencies listed in `pyproject.toml` using pip, then run the test
 suite:
 
 ```bash
-pip install numpy pydantic textual tinydb rebound pytest
+pip install numpy "pydantic>=2.11.5" textual tinydb rebound duckdb pytest
 pytest -q
 ```
 
