@@ -583,3 +583,18 @@ class TestOrbitalMechanicsIntegration:
         expected_sma = (149597870.7 + 227940000.0) / 2
         actual_sma = transfer["semi_major_axis"]
         assert abs(actual_sma - expected_sma) < 1e7  # Within 10,000 km
+
+        assert transfer["transfer_type"] in {"hohmann", "bi-elliptic"}
+        assert transfer["delta_v"] > 0
+
+    def test_transfer_orbit_bi_elliptic(self):
+        """Bi-elliptic transfer should be chosen for very large radius ratios."""
+        om = OrbitalMechanics()
+
+        inner = Vector3D(x=1e6, y=0.0, z=0.0)
+        outer = Vector3D(x=5e8, y=0.0, z=0.0)
+
+        transfer = om.calculate_transfer_orbit(inner, outer, 1.0)
+
+        assert transfer["transfer_type"] == "bi-elliptic"
+        assert transfer["delta_v"] > 0

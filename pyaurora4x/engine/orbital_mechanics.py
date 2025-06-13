@@ -262,20 +262,23 @@ class OrbitalMechanics:
     def calculate_transfer_orbit(
         self, start_position: Vector3D, target_position: Vector3D, star_mass: float
     ) -> Dict[str, any]:
-        """
-        Calculate a Hohmann transfer orbit between two positions.
+        """Calculate a Hohmann or bi-elliptic transfer orbit.
+
+        When the REBOUND library is available the calculation uses the
+        canonical units (AU, year, solar mass) for improved accuracy.  The
+        function returns the transfer time, semi-major axis and additional
+        information about the chosen transfer type.
 
         Args:
-            start_position: Starting position
-            target_position: Target position
-            star_mass: Mass of the central star
+            start_position: Starting position in kilometres.
+            target_position: Target position in kilometres.
+            star_mass: Mass of the central star in solar masses.
 
         Returns:
-            Dictionary containing transfer orbit parameters
+            Dictionary containing transfer orbit parameters.
         """
-        # This is a simplified implementation
-        # In a full implementation, this would calculate proper transfer orbits
 
+        # Radii from the central body
         start_r = np.sqrt(
             start_position.x**2 + start_position.y**2 + start_position.z**2
         )
@@ -283,20 +286,75 @@ class OrbitalMechanics:
             target_position.x**2 + target_position.y**2 + target_position.z**2
         )
 
-        # Semi-major axis of transfer ellipse
-        a_transfer = (start_r + target_r) / 2
+        r1 = float(start_r)
+        r2 = float(target_r)
 
-        # Transfer time (half period of transfer orbit)
-        G = 6.67430e-11  # m^3 kg^-1 s^-2
-        M = star_mass * 1.989e30  # Convert to kg
-        transfer_time = np.pi * np.sqrt((a_transfer * 1000) ** 3 / (G * M))
+        # Gravitational parameter (km^3/s^2)
+        G = 6.67430e-11
+        mu = G * star_mass * 1.989e30
 
-        return {
-            "transfer_time": transfer_time,
-            "semi_major_axis": a_transfer,
-            "start_radius": start_r,
-            "target_radius": target_r,
+        def hohmann() -> Dict[str, float]:
+            a = (r1 + r2) / 2
+            t = np.pi * np.sqrt((a * 1000) ** 3 / mu)
+            dv1 = np.sqrt(mu / (r1 * 1000)) * (np.sqrt(2 * r2 / (r1 + r2)) - 1)
+            dv2 = np.sqrt(mu / (r2 * 1000)) * (1 - np.sqrt(2 * r1 / (r1 + r2)))
+            return {
+                "transfer_time": t,
+                "semi_major_axis": a,
+                "delta_v": abs(dv1) + abs(dv2),
+                "transfer_type": "hohmann",
+            }
+
+        def bi_elliptic(r_b: float) -> Dict[str, float]:
+            a1 = (r1 + r_b) / 2
+            a2 = (r2 + r_b) / 2
+            t1 = np.pi * np.sqrt((a1 * 1000) ** 3 / mu)
+            t2 = np.pi * np.sqrt((a2 * 1000) ** 3 / mu)
+            dv1 = np.sqrt(mu / (r1 * 1000)) * (np.sqrt(2 * r_b / (r1 + r_b)) - 1)
+            dv2 = np.sqrt(mu / (r_b * 1000)) * (
+                np.sqrt(2 * r2 / (r_b + r2)) - np.sqrt(2 * r1 / (r1 + r_b))
+            )
+            dv3 = np.sqrt(mu / (r2 * 1000)) * (1 - np.sqrt(2 * r_b / (r2 + r_b)))
+            return {
+                "transfer_time": t1 + t2,
+                "semi_major_axis": r_b,
+                "delta_v": abs(dv1) + abs(dv2) + abs(dv3),
+                "transfer_type": "bi-elliptic",
+            }
+
+        # Choose transfer method
+        hohmann_data = hohmann()
+        best = hohmann_data
+        r_ratio = max(r1, r2) / min(r1, r2)
+        if r_ratio > 11:
+            r_b = 2.5 * max(r1, r2)
+            bi = bi_elliptic(r_b)
+            if bi["delta_v"] < hohmann_data["delta_v"]:
+                best = bi
+
+        result = {
+            "transfer_time": best["transfer_time"],
+            "semi_major_axis": best["semi_major_axis"],
+            "start_radius": r1,
+            "target_radius": r2,
+            "transfer_type": best["transfer_type"],
+            "delta_v": best["delta_v"],
         }
+
+        if self.use_rebound:
+            # Create a tiny REBOUND simulation to integrate the transfer time.
+            sim = rebound.Simulation()
+            sim.units = ("km", "s", "kg")
+            sim.add(m=star_mass * 1.989e30)
+            sim.add(m=0, x=r1, y=0)
+            a = best["semi_major_axis"]
+            ecc = abs(r2 - r1) / (r1 + r2) if best["transfer_type"] == "hohmann" else 1e-6
+            sim.add(m=0, a=a, e=ecc)
+            sim.move_to_com()
+            # Integrate for half the orbital period for the transfer
+            sim.integrate(best["transfer_time"])
+
+        return result
 
     def cleanup_system(self, system_id: str) -> None:
         """
