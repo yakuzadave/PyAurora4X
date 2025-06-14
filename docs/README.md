@@ -11,6 +11,7 @@ for documentation and as a guide when adding new files.
 - [Design Overview](design_overview.md)
 - [Gameplay Guide](gameplay_guide.md) – Basic commands, UI overview, and gameplay phases. Lists keyboard shortcuts like the `F1`–`F5` fleet focus keys.
 - [Contribution Guide](contributing.md)
+- [Game Turns](game_turns.md) – Explanation of the turn/tick system.
 
 
 ## Contributing New Documentation

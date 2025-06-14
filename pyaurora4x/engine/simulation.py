@@ -20,6 +20,7 @@ from pyaurora4x.core.events import EventManager
 from pyaurora4x.engine.scheduler import GameScheduler
 from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
+from pyaurora4x.engine.turn_manager import GameTurnManager
 
 from pyaurora4x.data.tech_tree import TechTreeManager
 
@@ -52,6 +53,7 @@ class GameSimulation:
         self.orbital_mechanics = OrbitalMechanics()
         self.system_generator = StarSystemGenerator()
         self.tech_manager = TechTreeManager()
+        self.turn_manager = GameTurnManager()
         
         # Game state
         self.is_running = False
@@ -81,6 +83,7 @@ class GameSimulation:
         self.empires.clear()
         self.star_systems.clear()
         self.fleets.clear()
+        self.turn_manager.reset()
         
         # Generate star systems
         self._generate_star_systems(num_systems)
@@ -371,6 +374,7 @@ class GameSimulation:
         return {
             "current_time": self.current_time,
             "game_start_time": self.game_start_time.isoformat(),
+            "turn_number": self.turn_manager.current_turn,
             "empires": {id: empire.model_dump() for id, empire in self.empires.items()},
             "star_systems": {id: system.model_dump() for id, system in self.star_systems.items()},
             "fleets": {id: fleet.model_dump() for id, fleet in self.fleets.items()},
@@ -380,6 +384,7 @@ class GameSimulation:
         """Load a game state from saved data."""
         self.current_time = state["current_time"]
         self.game_start_time = datetime.fromisoformat(state["game_start_time"])
+        self.turn_manager.current_turn = state.get("turn_number", 0)
         
         # Load empires
         self.empires.clear()
@@ -399,6 +404,13 @@ class GameSimulation:
         # Reinitialize systems
         self._initialize_orbital_mechanics()
         self._schedule_initial_events()
-        
+
         self.is_running = True
         logger.info("Game state loaded successfully")
+
+    def advance_turn(self) -> None:
+        """Advance the game by one turn."""
+        if not self.is_running or self.is_paused:
+            return
+        delta = self.turn_manager.advance_turn()
+        self.advance_time(delta)

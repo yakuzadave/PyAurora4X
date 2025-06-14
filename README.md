@@ -126,6 +126,7 @@ contribute new documents.
 - [docs/design_overview.md](docs/design_overview.md) – Summary of project goals and folder structure.
 - [docs/gameplay_guide.md](docs/gameplay_guide.md) – How to play: basic commands, UI overview, gameplay phases, and fleet movement details.
 - [docs/contributing.md](docs/contributing.md) – Developer contribution guide.
+- [docs/game_turns.md](docs/game_turns.md) – Overview of the turn and tick system.
 
 
 ## License
