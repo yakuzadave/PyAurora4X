@@ -1,6 +1,7 @@
 import pytest
 
 from pyaurora4x.engine.star_system import StarSystemGenerator
+from pyaurora4x.core.models import StarSystem
 
 
 class TestStarSystemGenerator:
@@ -45,3 +46,14 @@ class TestStarSystemGenerator:
         assert generator._generate_planet_name(5) == "Planet VI"
         assert generator._generate_planet_name(9) == "Planet X"
         assert generator._generate_planet_name(10) == "Planet 11"
+
+    def test_asteroid_belt_generation_and_serialization(self):
+        generator = StarSystemGenerator(seed=99)
+        systems = [generator.generate_system(f"sys{i}") for i in range(5)]
+
+        assert any(s.asteroid_belts for s in systems)
+
+        for system in systems:
+            data = system.model_dump()
+            recreated = StarSystem.model_validate(data)
+            assert recreated.asteroid_belts == system.asteroid_belts
