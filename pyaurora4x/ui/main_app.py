@@ -285,6 +285,7 @@ class PyAurora4XApp(App):
         # Update empire stats
         empire_stats = self.query_one("#empire_stats", EmpireStatsWidget)
         if player_empire:
+            empire_stats.event_manager = self.simulation.event_manager
             empire_stats.update_empire(
                 player_empire, self.simulation.current_time
             )

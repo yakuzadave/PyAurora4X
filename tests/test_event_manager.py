@@ -222,3 +222,39 @@ def test_event_expiration():
     assert log == []
     assert len(manager.processed_events) == 0
     assert len(manager.event_queue) == 0
+
+
+def test_get_recent_events():
+    manager = EventManager()
+    handler_log = []
+
+    manager.register_handler(RecordingHandler(handler_log), EventCategory.FLEET)
+
+    manager.post_event(
+        GameEvent(
+            id="",
+            category=EventCategory.FLEET,
+            priority=EventPriority.NORMAL,
+            timestamp=1,
+            title="old",
+            description="",
+            empire_id="emp",
+        )
+    )
+
+    manager.post_event(
+        GameEvent(
+            id="",
+            category=EventCategory.FLEET,
+            priority=EventPriority.NORMAL,
+            timestamp=2,
+            title="new",
+            description="",
+            empire_id="emp",
+        )
+    )
+
+    manager.process_events()
+
+    events = manager.get_recent_events("emp", EventCategory.FLEET, limit=1)
+    assert [e.title for e in events] == ["new"]

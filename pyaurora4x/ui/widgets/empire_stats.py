@@ -12,6 +12,7 @@ from textual.reactive import reactive
 
 from pyaurora4x.core.models import Empire
 from pyaurora4x.core.utils import format_time
+from pyaurora4x.core.events import EventManager, EventCategory
 
 
 class EmpireStatsWidget(Static):
@@ -24,8 +25,9 @@ class EmpireStatsWidget(Static):
     
     empire = reactive(None)
     
-    def __init__(self, **kwargs):
+    def __init__(self, event_manager: Optional[EventManager] = None, **kwargs):
         super().__init__(**kwargs)
+        self.event_manager: Optional[EventManager] = event_manager
         self.current_empire: Optional[Empire] = None
         self.current_time: float = 0.0
     
@@ -213,7 +215,17 @@ class EmpireStatsWidget(Static):
         # Recent military events (placeholder)
         lines.append("")
         lines.append("Recent Activity:")
-        lines.append("  No recent military activity")
+        events = []
+        if self.event_manager and empire:
+            events = self.event_manager.get_recent_events(
+                empire.id, EventCategory.FLEET, limit=3
+            )
+
+        if events:
+            for event in events:
+                lines.append(f"  {event.title}")
+        else:
+            lines.append("  No recent military activity")
         
         text = '\n'.join(lines)
         

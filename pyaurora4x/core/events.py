@@ -320,14 +320,30 @@ class EventManager:
             List of pending notifications
         """
         notifications = []
-        
+
         for event in self.event_queue:
-            if (event.category == EventCategory.NOTIFICATION and 
+            if (event.category == EventCategory.NOTIFICATION and
                 event.requires_attention and
                 (event.empire_id == empire_id or event.empire_id is None)):
                 notifications.append(event)
-        
+
         return notifications
+
+    def get_recent_events(
+        self,
+        empire_id: str,
+        category: EventCategory,
+        limit: int = 5,
+    ) -> List[GameEvent]:
+        """Get the most recent processed events for an empire and category."""
+
+        events = [
+            e
+            for e in self.processed_events
+            if e.category == category and (e.empire_id == empire_id or e.empire_id is None)
+        ]
+        events.sort(key=lambda e: e.timestamp, reverse=True)
+        return events[:limit]
     
     def clear_processed_events(self, older_than: Optional[float] = None) -> int:
         """
