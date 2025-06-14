@@ -272,7 +272,7 @@ class PyAurora4XApp(App):
         player_empire = self.simulation.get_player_empire()
         if player_empire:
             fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
-            fleet_panel.update_fleets(fleets)
+            fleet_panel.update_fleets(fleets, self.simulation.current_time)
         fleet_panel.refresh()
         
         # Update research panel
