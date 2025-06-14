@@ -176,7 +176,7 @@ class PyAurora4XApp(App):
         Binding("h", "show_help", "Help"),
     ]
     
-    def __init__(self, **kwargs):
+    def __init__(self, new_game_systems: int = 3, new_game_empires: int = 2, **kwargs):
         super().__init__(**kwargs)
         self.simulation: Optional[GameSimulation] = None
         self.save_manager = SaveManager()
@@ -185,6 +185,8 @@ class PyAurora4XApp(App):
         self.last_auto_save = 0
         self.load_file: Optional[str] = None
         self.load_data: Optional[Dict[str, Any]] = None
+        self.new_game_systems = new_game_systems
+        self.new_game_empires = new_game_empires
     
     def compose(self) -> ComposeResult:
         """Compose the main application layout."""
@@ -231,7 +233,10 @@ class PyAurora4XApp(App):
     def start_new_game(self) -> None:
         """Start a new game."""
         self.simulation = GameSimulation()
-        self.simulation.initialize_new_game()
+        self.simulation.initialize_new_game(
+            num_systems=self.new_game_systems,
+            num_empires=self.new_game_empires,
+        )
         
         # Update UI components with new game data
         self._update_all_widgets()

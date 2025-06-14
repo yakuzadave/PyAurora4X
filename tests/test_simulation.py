@@ -301,4 +301,12 @@ class TestGameSimulation:
                 assert fleet.status == FleetStatus.IN_TRANSIT
                 assert fleet.estimated_arrival is not None
 
+    def test_custom_system_and_empire_counts(self):
+        """Initialize with custom counts and verify."""
+        sim = GameSimulation()
+        sim.initialize_new_game(num_systems=4, num_empires=4)
+
+        assert len(sim.star_systems) == 4
+        assert len(sim.empires) == 4
+
 

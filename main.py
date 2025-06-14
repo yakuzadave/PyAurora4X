@@ -64,9 +64,21 @@ def main():
         help="Load a saved game file"
     )
     parser.add_argument(
-        "--new-game", 
-        action="store_true", 
+        "--new-game",
+        action="store_true",
         help="Start a new game (default)"
+    )
+    parser.add_argument(
+        "--systems",
+        type=int,
+        default=3,
+        help="Number of star systems"
+    )
+    parser.add_argument(
+        "--empires",
+        type=int,
+        default=2,
+        help="Total empires (including player)"
     )
     
     args = parser.parse_args()
@@ -76,9 +88,12 @@ def main():
         return
     
     # Run the main Textual application
-    app = PyAurora4XApp()
+    app = PyAurora4XApp(
+        new_game_systems=args.systems,
+        new_game_empires=args.empires,
+    )
     
-    if args.load:
+    if args.load and not args.new_game:
         # Set load parameters for the app to handle after initialization
         save_manager = SaveManager()
         try:
