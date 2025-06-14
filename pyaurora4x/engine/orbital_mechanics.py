@@ -171,30 +171,18 @@ class OrbitalMechanics:
                 mean_anomaly = (mean_motion * current_time) % (2 * np.pi)
                 
 
-                e = planet_data.get('eccentricity', 0.0)
-                E = mean_anomaly
-                for _ in range(5):
-                    E = mean_anomaly + e * np.sin(E)
-                a = planet_data['orbital_distance'] * 149597870.7
-                r = a * (1 - e * np.cos(E))
-                true_anomaly = 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2),
-                                             np.sqrt(1 - e) * np.cos(E / 2))
-
-                # Solve Kepler's equation for eccentric anomaly
-                e = planet_data['eccentricity']
+                e = planet_data.get("eccentricity", 0.0)
                 eccentric_anomaly = mean_anomaly
                 for _ in range(5):
                     eccentric_anomaly = mean_anomaly + e * np.sin(eccentric_anomaly)
 
                 true_anomaly = 2 * np.arctan2(
                     np.sqrt(1 + e) * np.sin(eccentric_anomaly / 2),
-                    np.sqrt(1 - e) * np.cos(eccentric_anomaly / 2)
+                    np.sqrt(1 - e) * np.cos(eccentric_anomaly / 2),
                 )
 
-                r = (
-                    planet_data['orbital_distance'] * (1 - e * np.cos(eccentric_anomaly))
-                    * 149597870.7
-                )
+                a = planet_data["orbital_distance"] * 149597870.7
+                r = a * (1 - e * np.cos(eccentric_anomaly))
 
 
                 x = r * np.cos(true_anomaly)
