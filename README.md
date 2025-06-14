@@ -70,6 +70,15 @@ You can also start a brand new game immediately with:
 python main.py --new-game
 ```
 
+You can customize the initial galaxy:
+
+```bash
+python main.py --new-game --systems 5 --empires 3
+```
+
+`--systems` controls how many star systems are generated, while `--empires`
+sets the total number of empires (including the player).
+
 This is useful when you want to skip loading existing saves and jump straight into a fresh session.
 
 To resume a previous session, provide the save name or path:
