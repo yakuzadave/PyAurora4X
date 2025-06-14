@@ -27,6 +27,7 @@ class EmpireStatsWidget(Static):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.current_empire: Optional[Empire] = None
+        self.current_time: float = 0.0
     
     def compose(self) -> ComposeResult:
         """Compose the empire stats layout."""
@@ -40,7 +41,7 @@ class EmpireStatsWidget(Static):
                 yield Static("", id="empire_military", classes="info-section")
                 yield Static("", id="empire_colonies", classes="info-section")
     
-    def update_empire(self, empire: Empire) -> None:
+    def update_empire(self, empire: Empire, current_time: Optional[float] = None) -> None:
         """
         Update the displayed empire.
         
@@ -48,6 +49,8 @@ class EmpireStatsWidget(Static):
             empire: Empire to display statistics for
         """
         self.current_empire = empire
+        if current_time is not None:
+            self.current_time = current_time
         self._update_all_sections()
     
     def _update_all_sections(self) -> None:
@@ -87,7 +90,10 @@ class EmpireStatsWidget(Static):
         lines.append(f"Culture: {empire.culture}")
         
         if empire.established_date > 0:
-            age = format_time(empire.established_date)
+            age_seconds = self.current_time - empire.established_date
+            if age_seconds < 0:
+                age_seconds = 0.0
+            age = format_time(age_seconds)
             lines.append(f"Age: {age}")
         
         lines.append(f"Home System: {empire.home_system_id}")
