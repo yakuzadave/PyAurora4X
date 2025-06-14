@@ -48,6 +48,14 @@ manager = SaveManager(use_duckdb=True)
 manager = SaveManager(use_duckdb=False)
 ```
 
+You can change the default save directory by setting the
+`PYAURORA_SAVE_DIR` environment variable. If `save_directory` is not
+provided, `SaveManager` will use this path:
+
+```bash
+export PYAURORA_SAVE_DIR=/path/to/saves
+```
+
 ### Running the Game
 
 Launch the main interface with:

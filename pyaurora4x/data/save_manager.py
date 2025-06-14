@@ -5,6 +5,7 @@ Handles game state serialization and persistence using DuckDB, TinyDB or JSON.
 """
 
 import json
+import os
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 from enum import Enum
@@ -39,16 +40,21 @@ class SaveManager:
     """
 
     def __init__(
-        self, save_directory: str = "saves", *, use_duckdb: Optional[bool] = None
+        self, save_directory: Optional[str] = None, *, use_duckdb: Optional[bool] = None
     ):
         """
         Initialize the save manager.
 
         Args:
-            save_directory: Directory to store save files
+            save_directory: Directory to store save files. If ``None`` the
+                ``PYAURORA_SAVE_DIR`` environment variable is checked and used
+                when set. Otherwise defaults to ``"saves"``.
             use_duckdb: Force use of DuckDB if True or disable if False. If None,
                 uses DuckDB when available.
         """
+        if save_directory is None:
+            save_directory = os.getenv("PYAURORA_SAVE_DIR", "saves")
+
         self.save_directory = Path(save_directory)
         self.save_directory.mkdir(exist_ok=True)
 

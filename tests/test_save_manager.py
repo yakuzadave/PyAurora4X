@@ -55,3 +55,11 @@ def test_list_and_load_specific_save(tmp_path):
 
     loaded = manager.load_game("second")
     assert loaded == data2
+
+
+def test_environment_override(tmp_path, monkeypatch):
+    env_path = tmp_path / "env_saves"
+    monkeypatch.setenv("PYAURORA_SAVE_DIR", str(env_path))
+    manager = SaveManager()
+    assert manager.save_directory == env_path
+    _run_cycle(manager, "env_save")
