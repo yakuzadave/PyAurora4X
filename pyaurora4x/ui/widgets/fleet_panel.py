@@ -10,9 +10,10 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 
-from pyaurora4x.core.models import Fleet
+from pyaurora4x.core.models import Fleet, Planet, StarSystem
 from pyaurora4x.core.enums import FleetStatus
 from pyaurora4x.core.utils import format_distance, format_time
+from pyaurora4x.ui.widgets.planet_select_dialog import PlanetSelectDialog
 
 
 class FleetPanel(Static):
@@ -259,11 +260,43 @@ class FleetPanel(Static):
     
     def _handle_move_fleet(self, fleet: Fleet) -> None:
         """Handle move fleet command."""
-        # In a full implementation, this would open a destination selection dialog
-        # For now, just add a placeholder order
-        fleet.current_orders.append("Move to destination (not implemented)")
-        fleet.status = FleetStatus.MOVING
-        self._update_fleet_details()
+        app = getattr(self, "app", None)
+        if not app or not getattr(app, "simulation", None):
+            return
+
+        simulation = app.simulation
+        system = simulation.star_systems.get(fleet.system_id)
+        if not system or not system.planets:
+            return
+
+        def _on_select(planet_id: str) -> None:
+            planet = next((p for p in system.planets if p.id == planet_id), None)
+            if not planet:
+                return
+            self._apply_move_selection(fleet, planet, system, simulation)
+
+        dialog = PlanetSelectDialog(system.planets, _on_select)
+        try:
+            self.mount(dialog)
+        except Exception:
+            pass
+
+    def _apply_move_selection(
+        self,
+        fleet: Fleet,
+        planet: Planet,
+        system: StarSystem,
+        simulation,
+    ) -> None:
+        """Apply the move order after a planet is selected."""
+        transfer = simulation.orbital_mechanics.calculate_transfer_orbit(
+            fleet.position, planet.position, system.star_mass
+        )
+        fleet.destination = planet.position.copy()
+        fleet.estimated_arrival = simulation.current_time + transfer["transfer_time"]
+        fleet.current_orders.append(f"Transfer to {planet.name}")
+        fleet.status = FleetStatus.IN_TRANSIT
+        self.refresh()
         self.post_message_no_wait(FleetCommandEvent("move", fleet.id))
     
     def _handle_orbit_fleet(self, fleet: Fleet) -> None:
