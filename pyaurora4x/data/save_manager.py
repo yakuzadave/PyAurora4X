@@ -527,20 +527,25 @@ class SaveManager:
         Clean up old save files, keeping only the most recent ones.
 
         Args:
-            keep_count: Number of saves to keep
+            keep_count: Number of saves to keep. Values less than or equal to
+                zero will remove all saves.
 
         Returns:
             Number of saves deleted
         """
         saves = self.list_saves()
 
-        if len(saves) <= keep_count:
+        # Clamp keep_count to a minimum of 0 to avoid negative slicing
+        keep_count = max(0, keep_count)
+
+        if keep_count <= 0:
+            saves_to_delete = saves
+        elif len(saves) <= keep_count:
             return 0
+        else:
+            saves_to_delete = saves[keep_count:]
 
-        # Delete oldest saves
-        saves_to_delete = saves[keep_count:]
         deleted_count = 0
-
         for save_metadata in saves_to_delete:
             save_name = save_metadata["save_name"]
             if self.delete_save(save_name):
