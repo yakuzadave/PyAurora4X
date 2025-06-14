@@ -28,6 +28,24 @@ def test_cleanup_old_saves(tmp_path, monkeypatch):
         assert len(manager.list_saves()) == 10
 
 
+def test_cleanup_all_when_keep_count_zero_or_negative(tmp_path, monkeypatch):
+    for backend in ["json", "tinydb", "duckdb"]:
+        manager = create_manager(tmp_path / f"zero_{backend}", backend, monkeypatch)
+        for i in range(5):
+            manager.save_game({"idx": i}, f"save_zero_{i}")
+        assert len(manager.list_saves()) == 5
+        deleted = manager.cleanup_old_saves(keep_count=0)
+        assert deleted == 5
+        assert len(manager.list_saves()) == 0
+
+        for i in range(3):
+            manager.save_game({"idx": i}, f"save_neg_{i}")
+        assert len(manager.list_saves()) == 3
+        deleted = manager.cleanup_old_saves(keep_count=-2)
+        assert deleted == 3
+        assert len(manager.list_saves()) == 0
+
+
 def test_get_save_info_json_and_tinydb(tmp_path, monkeypatch):
     for backend in ["json", "tinydb"]:
         manager = create_manager(tmp_path / backend, backend, monkeypatch)
