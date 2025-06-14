@@ -30,6 +30,7 @@ class FleetPanel(Static):
         super().__init__(**kwargs)
         self.fleet_list: List[Fleet] = []
         self.current_fleet: Optional[Fleet] = None
+        self.current_time: float = 0.0
     
     def compose(self) -> ComposeResult:
         """Compose the fleet panel layout."""
@@ -63,14 +64,17 @@ class FleetPanel(Static):
         table.add_columns("Name", "Status", "Ships", "Location", "Fuel")
         table.cursor_type = "row"
     
-    def update_fleets(self, fleets: List[Fleet]) -> None:
+    def update_fleets(self, fleets: List[Fleet], current_time: Optional[float] = None) -> None:
         """
         Update the fleet list.
         
         Args:
             fleets: List of fleets to display
+            current_time: Current simulation time for ETA calculations
         """
         self.fleet_list = [f for f in fleets if f is not None]
+        if current_time is not None:
+            self.current_time = current_time
         self._refresh_fleet_table()
         
         # Select first fleet if none selected
@@ -135,7 +139,7 @@ class FleetPanel(Static):
             return
         
         fleet = self.current_fleet
-        details = self._generate_fleet_details(fleet)
+        details = self._generate_fleet_details(fleet, self.current_time)
         
         info_widget = self.query_one("#fleet_info", Static)
         info_widget.update(details)
@@ -143,8 +147,13 @@ class FleetPanel(Static):
         # Update button states
         self._update_fleet_controls()
     
-    def _generate_fleet_details(self, fleet: Fleet) -> str:
-        """Generate detailed fleet information text."""
+    def _generate_fleet_details(self, fleet: Fleet, current_time: float = 0.0) -> str:
+        """Generate detailed fleet information text.
+
+        Args:
+            fleet: Fleet to display information for.
+            current_time: Current simulation time for ETA calculations.
+        """
         lines = []
         
         # Basic fleet info
@@ -182,11 +191,16 @@ class FleetPanel(Static):
                 lines.append(f"  ... and {len(fleet.current_orders) - 3} more")
         
         # Destination and ETA
-        if fleet.destination and fleet.estimated_arrival:
+        if fleet.destination and fleet.estimated_arrival is not None:
             lines.append("")
             lines.append("Navigation:")
-            lines.append(f"Destination: ({fleet.destination.x:.0f}, {fleet.destination.y:.0f}, {fleet.destination.z:.0f})")
-            lines.append(f"ETA: {format_time(fleet.estimated_arrival)}")
+            lines.append(
+                f"Destination: ({fleet.destination.x:.0f}, {fleet.destination.y:.0f}, {fleet.destination.z:.0f})"
+            )
+            time_remaining = fleet.estimated_arrival - current_time
+            if time_remaining < 0:
+                time_remaining = 0.0
+            lines.append(f"ETA: {format_time(time_remaining)}")
         
         return '\n'.join(lines)
     
