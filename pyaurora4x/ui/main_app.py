@@ -285,7 +285,9 @@ class PyAurora4XApp(App):
         # Update empire stats
         empire_stats = self.query_one("#empire_stats", EmpireStatsWidget)
         if player_empire:
-            empire_stats.update_empire(player_empire)
+            empire_stats.update_empire(
+                player_empire, self.simulation.current_time
+            )
         
         # Update time controls
         time_controls = self.query_one("#time_controls", TimeControlWidget)
