@@ -12,6 +12,7 @@ for documentation and as a guide when adding new files.
 - [Gameplay Guide](gameplay_guide.md) – Basic commands, UI overview, and gameplay phases. Lists keyboard shortcuts like the `F1`–`F5` fleet focus keys.
 - [Contribution Guide](contributing.md)
 - [Game Turns](game_turns.md) – Explanation of the turn/tick system.
+- [Streamlit Dashboard](streamlit_dashboard.md) – Launch a Streamlit dashboard to inspect game data.
 
 
 ## Contributing New Documentation
