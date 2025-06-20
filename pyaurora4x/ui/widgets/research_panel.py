@@ -211,31 +211,26 @@ class ResearchPanel(Static):
         
         current_research_widget = self.query_one("#current_research", Static)
         progress_bar = self.query_one("#research_progress", ProgressBar)
-        
+
+        lines = []
         if self.current_empire.current_research:
-            # Find the technology being researched
-            research_tech = self.current_empire.technologies.get(
-                self.current_empire.current_research
-            )
-            
-            if research_tech:
-                # Calculate progress (simplified)
-                progress_percentage = min(
-                    (self.current_empire.research_points / research_tech.research_cost) * 100,
-                    100
-                )
-                
-                current_research_widget.update(
-                    f"Researching: {research_tech.name}\n"
-                    f"Progress: {self.current_empire.research_points:.0f} / {research_tech.research_cost} RP"
-                )
-                progress_bar.update(progress=progress_percentage)
+            tech = self.current_empire.technologies.get(self.current_empire.current_research)
+            if tech:
+                progress = self.current_empire.research_points
+                percentage = min((progress / tech.research_cost) * 100, 100)
+                lines.append(f"{tech.name}: {progress:.0f} / {tech.research_cost} RP")
+                progress_bar.update(progress=percentage)
             else:
-                current_research_widget.update("No active research")
                 progress_bar.update(progress=0)
         else:
-            current_research_widget.update("No active research")
             progress_bar.update(progress=0)
+
+        for tech_id, points in self.current_empire.research_projects.items():
+            tech = self.current_empire.technologies.get(tech_id)
+            if tech:
+                lines.append(f"{tech.name}: {points:.0f} / {tech.research_cost} RP")
+
+        current_research_widget.update("\n".join(lines) if lines else "No active research")
     
     def _update_research_controls(self) -> None:
         """Update the state of research control buttons."""
@@ -247,15 +242,29 @@ class ResearchPanel(Static):
             cancel_btn = self.query_one("#cancel_research", Button)
             
             # Start button logic
+            active_count = (
+                (1 if self.current_empire.current_research else 0)
+                + len(self.current_empire.research_projects)
+            )
+            labs_full = active_count >= self.current_empire.research_labs
+            already_active = (
+                self.current_empire.current_research == self.current_tech.id
+                or self.current_tech.id in self.current_empire.research_projects
+            )
+
             can_start = (
-                not self.current_tech.is_researched and
-                self._are_prerequisites_met(self.current_tech) and
-                self.current_empire.current_research != self.current_tech.id
+                not self.current_tech.is_researched
+                and self._are_prerequisites_met(self.current_tech)
+                and not labs_full
+                and not already_active
             )
             start_btn.disabled = not can_start
-            
+
             # Cancel button logic
-            can_cancel = self.current_empire.current_research is not None
+            can_cancel = (
+                self.current_empire.current_research == self.current_tech.id
+                or self.current_tech.id in self.current_empire.research_projects
+            )
             cancel_btn.disabled = not can_cancel
             
         except Exception:
@@ -284,9 +293,18 @@ class ResearchPanel(Static):
         if not self._are_prerequisites_met(self.current_tech):
             return
         
-        # Start researching the selected technology
-        self.current_empire.current_research = self.current_tech.id
-        self.current_empire.research_points = 0  # Reset progress
+        active_count = (
+            (1 if self.current_empire.current_research else 0)
+            + len(self.current_empire.research_projects)
+        )
+        if active_count >= self.current_empire.research_labs:
+            return
+
+        if not self.current_empire.current_research:
+            self.current_empire.current_research = self.current_tech.id
+            self.current_empire.research_points = 0
+        else:
+            self.current_empire.research_projects[self.current_tech.id] = 0
         
         # Add technology to empire if not already present
         if self.current_tech.id not in self.current_empire.technologies:
@@ -301,8 +319,14 @@ class ResearchPanel(Static):
         if not self.current_empire:
             return
         
-        self.current_empire.current_research = None
-        self.current_empire.research_points = 0
+        tech_id = self.current_tech.id if self.current_tech else None
+        if tech_id == self.current_empire.current_research:
+            self.current_empire.current_research = None
+            self.current_empire.research_points = 0
+        elif tech_id in self.current_empire.research_projects:
+            self.current_empire.research_projects.pop(tech_id, None)
+        else:
+            return
         
         self._update_research_status()
         self._update_research_controls()

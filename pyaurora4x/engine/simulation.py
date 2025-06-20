@@ -5,7 +5,7 @@ Manages the overall game state, time advancement, and coordination
 between different game systems.
 """
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from datetime import datetime
 import logging
 import random
@@ -334,8 +334,12 @@ class GameSimulation:
                 f"{fleet.name} transferring to {target.name} (ETA {transfer['transfer_time']}s)"
             )
 
-        # Start new research if none is assigned
-        if not empire.current_research:
+        # Start new research if labs are available
+        active_count = (
+            (1 if empire.current_research else 0)
+            + len(empire.research_projects)
+        )
+        if active_count < empire.research_labs:
             available = [
                 t
                 for t in self.tech_manager.technologies.values()
@@ -345,25 +349,45 @@ class GameSimulation:
             if available:
                 chosen = random.choice(available)
                 empire.technologies[chosen.id] = chosen
-                empire.current_research = chosen.id
-                empire.research_points = 0.0
+                if not empire.current_research:
+                    empire.current_research = chosen.id
+                    empire.research_points = 0.0
+                else:
+                    empire.research_projects[chosen.id] = 0.0
                 empire.research_allocation = {chosen.tech_type: 100.0}
                 logger.debug(f"{empire.name} started researching {chosen.name}")
 
     def _process_research(self, delta_seconds: float) -> None:
         """Advance research progress for all empires."""
         for empire in self.empires.values():
+            # Legacy single-project research
             tech_id = empire.current_research
             if tech_id:
                 tech = empire.technologies.get(tech_id)
                 if tech:
-                    # Simple research rate: 1 RP per second
                     empire.research_points += delta_seconds
-
                     if empire.research_points >= tech.research_cost:
                         tech.is_researched = True
                         empire.current_research = None
                         empire.research_points = 0
+
+            # Additional concurrent projects
+            completed: List[str] = []
+            for proj_id, progress in list(empire.research_projects.items()):
+                tech = empire.technologies.get(proj_id)
+                if not tech:
+                    completed.append(proj_id)
+                    continue
+
+                progress += delta_seconds
+                if progress >= tech.research_cost:
+                    tech.is_researched = True
+                    completed.append(proj_id)
+                else:
+                    empire.research_projects[proj_id] = progress
+
+            for proj_id in completed:
+                empire.research_projects.pop(proj_id, None)
 
             # AI-specific behaviors like fleet movement and new research
             # assignment are handled by `_update_ai_empires` via

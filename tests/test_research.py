@@ -18,6 +18,24 @@ def test_research_completion():
     assert empire.current_research is None
 
 
+def test_multiple_research_projects():
+    sim = GameSimulation()
+    sim.initialize_new_game(num_systems=1, num_empires=1)
+    empire = sim.get_player_empire()
+    empire.research_labs = 2
+
+    tech1 = empire.technologies["basic_propulsion"]
+    tech2 = empire.technologies["basic_sensors"]
+
+    empire.current_research = tech1.id
+    empire.research_projects[tech2.id] = 0.0
+
+    sim.advance_time(max(tech1.research_cost, tech2.research_cost))
+
+    assert tech1.is_researched
+    assert tech2.is_researched
+
+
 def test_research_persistence(tmp_path):
     sim = GameSimulation()
     sim.initialize_new_game(num_systems=1, num_empires=1)

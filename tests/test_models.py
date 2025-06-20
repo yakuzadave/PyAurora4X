@@ -247,6 +247,8 @@ class TestEmpire:
         assert len(empire.fleets) == 0
         assert len(empire.colonies) == 0
         assert empire.research_points == 0.0
+        assert empire.research_labs == 1
+        assert len(empire.research_projects) == 0
         assert empire.government_type == "Democracy"
         assert empire.culture == "Human"
     

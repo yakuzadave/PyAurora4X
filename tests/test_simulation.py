@@ -294,7 +294,10 @@ class TestGameSimulation:
 
         for empire in ai_empires:
             # Should have started some research
-            assert empire.current_research is not None
+            active = (
+                1 if empire.current_research else 0
+            ) + len(empire.research_projects)
+            assert active > 0
 
             for fleet_id in empire.fleets:
                 fleet = sim.get_fleet(fleet_id)
