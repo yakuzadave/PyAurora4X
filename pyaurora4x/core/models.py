@@ -203,6 +203,14 @@ class AsteroidBelt(BaseModel):
     width: float  # AU width of the belt
 
 
+class JumpPoint(BaseModel):
+    """Connection between two star systems for FTL travel."""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    position: Vector3D
+    connects_to: str  # target star system id
+
+
 class StarSystem(BaseModel):
     """Represents a complete star system."""
 
@@ -222,7 +230,7 @@ class StarSystem(BaseModel):
     # Navigation and zones
     habitable_zone_inner: float = 0.95  # AU
     habitable_zone_outer: float = 1.37  # AU
-    jump_points: List[str] = Field(default_factory=list)
+    jump_points: List[JumpPoint] = Field(default_factory=list)
 
     # Exploration status
     is_explored: bool = False

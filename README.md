@@ -137,6 +137,7 @@ contribute new documents.
 - [docs/contributing.md](docs/contributing.md) – Developer contribution guide.
 - [docs/game_turns.md](docs/game_turns.md) – Overview of the turn and tick system.
 - [docs/streamlit_dashboard.md](docs/streamlit_dashboard.md) – How to launch the Streamlit dashboard.
+- [docs/jump_points.md](docs/jump_points.md) – Details on jump point mechanics and FTL travel.
 
 
 ## License

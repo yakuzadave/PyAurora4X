@@ -9,7 +9,13 @@ import math
 from typing import List, Optional
 import logging
 
-from pyaurora4x.core.models import StarSystem, Planet, Vector3D, AsteroidBelt
+from pyaurora4x.core.models import (
+    StarSystem,
+    Planet,
+    Vector3D,
+    AsteroidBelt,
+    JumpPoint,
+)
 from pyaurora4x.core.enums import PlanetType, StarType
 
 logger = logging.getLogger(__name__)
@@ -524,3 +530,28 @@ class StarSystemGenerator:
         # Sort belts by distance for consistency
         belts.sort(key=lambda b: b.distance)
         return belts
+
+    def generate_jump_network(self, systems: List[StarSystem]) -> None:
+        """Create simple jump point connections between systems."""
+        if len(systems) < 2:
+            return
+
+        for i, system in enumerate(systems):
+            target = systems[(i + 1) % len(systems)]
+
+            jp1 = self._create_jump_point(system)
+            jp1.connects_to = target.id
+            system.jump_points.append(jp1)
+
+            jp2 = self._create_jump_point(target)
+            jp2.connects_to = system.id
+            target.jump_points.append(jp2)
+
+    def _create_jump_point(self, system: StarSystem) -> JumpPoint:
+        distance_au = random.uniform(0.2, 2.0)
+        angle = random.uniform(0.0, 2 * math.pi)
+        r = distance_au * 149597870.7
+        x = r * math.cos(angle)
+        y = r * math.sin(angle)
+        pos = Vector3D(x=x, y=y, z=0.0)
+        return JumpPoint(position=pos, connects_to="")

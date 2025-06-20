@@ -87,6 +87,8 @@ class GameSimulation:
         
         # Generate star systems
         self._generate_star_systems(num_systems)
+        # Link systems via jump points
+        self.system_generator.generate_jump_network(list(self.star_systems.values()))
 
         # Create player empire
         self._create_player_empire()
@@ -368,6 +370,31 @@ class GameSimulation:
     def get_fleet(self, fleet_id: str) -> Optional[Fleet]:
         """Get a fleet by ID."""
         return self.fleets.get(fleet_id)
+
+    def jump_fleet(self, fleet_id: str, target_system_id: str) -> bool:
+        """Instantly move a fleet through a jump point to another system."""
+        fleet = self.fleets.get(fleet_id)
+        if not fleet:
+            return False
+
+        current_system = self.star_systems.get(fleet.system_id)
+        target_system = self.star_systems.get(target_system_id)
+        if not current_system or not target_system:
+            return False
+
+        connection = next(
+            (jp for jp in current_system.jump_points if jp.connects_to == target_system_id),
+            None,
+        )
+        if not connection:
+            return False
+
+        fleet.system_id = target_system_id
+        fleet.position = Vector3D(**target_system.planets[0].position.model_dump()) if target_system.planets else Vector3D()
+        fleet.destination = None
+        fleet.estimated_arrival = None
+        fleet.status = FleetStatus.IDLE
+        return True
     
     def get_game_state(self) -> Dict[str, Any]:
         """Get the current game state for saving."""
