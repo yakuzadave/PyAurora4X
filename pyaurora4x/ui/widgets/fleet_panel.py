@@ -296,7 +296,7 @@ class FleetPanel(Static):
         fleet.estimated_arrival = simulation.current_time + transfer["transfer_time"]
         fleet.current_orders.append(f"Transfer to {planet.name}")
         fleet.status = FleetStatus.IN_TRANSIT
-        self.refresh()
+        self.refresh_fleet_data()
         self.post_message_no_wait(FleetCommandEvent("move", fleet.id))
     
     def _handle_orbit_fleet(self, fleet: Fleet) -> None:
@@ -332,7 +332,7 @@ class FleetPanel(Static):
             if self.current_fleet:
                 self._update_fleet_details()
 
-    def refresh(self) -> None:
+    def refresh_fleet_data(self) -> None:
         """Refresh fleet information."""
         self._update_display()
 

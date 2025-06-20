@@ -319,7 +319,7 @@ class ResearchPanel(Static):
             if self.current_tech:
                 self._update_tech_details()
 
-    def refresh(self) -> None:
+    def refresh_research_data(self) -> None:
         """Refresh research information."""
         self._update_display()
 
