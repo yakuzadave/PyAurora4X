@@ -274,6 +274,8 @@ class Empire(BaseModel):
     technologies: Dict[str, Technology] = Field(default_factory=dict)
     current_research: Optional[str] = None
     research_points: float = 0.0
+    research_projects: Dict[str, float] = Field(default_factory=dict)
+    research_labs: int = 1
     research_allocation: Dict[TechnologyType, float] = Field(default_factory=dict)
 
     # Resources and economy
