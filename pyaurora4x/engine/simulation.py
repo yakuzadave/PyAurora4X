@@ -11,7 +11,15 @@ import logging
 import random
 
 
-from pyaurora4x.core.models import Empire, StarSystem, Fleet, Technology, Planet, Vector3D
+from pyaurora4x.core.models import (
+    Empire,
+    StarSystem,
+    Fleet,
+    Technology,
+    Planet,
+    Vector3D,
+    Colony,
+)
 
 
 from pyaurora4x.core.enums import FleetStatus, PlanetType
@@ -46,6 +54,7 @@ class GameSimulation:
         self.empires: Dict[str, Empire] = {}
         self.star_systems: Dict[str, StarSystem] = {}
         self.fleets: Dict[str, Fleet] = {}
+        self.colonies: Dict[str, Colony] = {}
 
         # Game systems
         self.scheduler = GameScheduler()
@@ -175,6 +184,17 @@ class GameSimulation:
         )
         
         player_empire.fleets.append(initial_fleet.id)
+        # Create initial colony on the home planet
+        colony = Colony(
+            name=f"{home_planet.name} Colony",
+            empire_id=player_empire.id,
+            planet_id=home_planet.id,
+            established_date=self.current_time,
+        )
+        player_empire.colonies.append(colony.id)
+        self.colonies[colony.id] = colony
+        home_planet.colony_id = colony.id
+
         self.empires[player_empire.id] = player_empire
         self.fleets[initial_fleet.id] = initial_fleet
         
@@ -210,6 +230,17 @@ class GameSimulation:
             )
             
             ai_empire.fleets.append(ai_fleet.id)
+            # Create initial colony for AI
+            colony = Colony(
+                name=f"{home_planet.name} Colony",
+                empire_id=ai_empire.id,
+                planet_id=home_planet.id,
+                established_date=self.current_time,
+            )
+            ai_empire.colonies.append(colony.id)
+            self.colonies[colony.id] = colony
+            home_planet.colony_id = colony.id
+
             self.empires[ai_empire.id] = ai_empire
             self.fleets[ai_fleet.id] = ai_fleet
             
@@ -257,6 +288,9 @@ class GameSimulation:
 
         # Research progression
         self._process_research(delta_seconds)
+
+        # Colony management
+        self._update_colonies(delta_seconds)
         
         logger.debug(f"Advanced time by {delta_seconds}s to {self.current_time}")
     
@@ -335,6 +369,20 @@ class GameSimulation:
             # assignment are handled by `_update_ai_empires` via
             # `_process_ai_empire` and should not be duplicated here.
 
+    def _update_colonies(self, delta_seconds: float) -> None:
+        """Update population and resource production for all colonies."""
+        seconds_per_year = 365.25 * 24 * 3600
+        for colony in self.colonies.values():
+            # Population growth
+            growth = colony.population * (colony.growth_rate / seconds_per_year) * delta_seconds
+            colony.population += int(growth)
+
+            # Mining infrastructure produces minerals
+            mines = colony.infrastructure.get("mine", 0)
+            if mines > 0:
+                produced = mines * 10.0 * (delta_seconds / 86400)
+                colony.stockpiles["minerals"] = colony.stockpiles.get("minerals", 0.0) + produced
+
     
     def pause(self) -> None:
         """Pause the game simulation."""
@@ -405,6 +453,7 @@ class GameSimulation:
             "empires": {id: empire.model_dump() for id, empire in self.empires.items()},
             "star_systems": {id: system.model_dump() for id, system in self.star_systems.items()},
             "fleets": {id: fleet.model_dump() for id, fleet in self.fleets.items()},
+            "colonies": {id: colony.model_dump() for id, colony in self.colonies.items()},
         }
     
     def load_game_state(self, state: Dict[str, Any]) -> None:
@@ -427,6 +476,23 @@ class GameSimulation:
         self.fleets.clear()
         for fleet_id, fleet_data in state["fleets"].items():
             self.fleets[fleet_id] = Fleet(**fleet_data)
+
+        # Load colonies
+        self.colonies.clear()
+        for colony_id, colony_data in state.get("colonies", {}).items():
+            self.colonies[colony_id] = Colony(**colony_data)
+
+        # Restore colony links
+        for colony in self.colonies.values():
+            # Add colony to owning empire
+            empire = self.empires.get(colony.empire_id)
+            if empire and colony.id not in empire.colonies:
+                empire.colonies.append(colony.id)
+            for system in self.star_systems.values():
+                for planet in system.planets:
+                    if planet.id == colony.planet_id:
+                        planet.colony_id = colony.id
+                        break
         
         # Reinitialize systems
         self._initialize_orbital_mechanics()

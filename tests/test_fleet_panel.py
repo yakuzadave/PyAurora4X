@@ -20,6 +20,9 @@ class DummyFleetPanel(FleetPanel):
     def refresh(self, *args, **kwargs):  # type: ignore[override]
         pass
 
+    def refresh_fleet_data(self) -> None:  # type: ignore[override]
+        pass
+
 
 def create_fleet(name: str, arrival: float) -> Fleet:
     return Fleet(
