@@ -83,6 +83,27 @@ class ShipType(Enum):
     REPAIR_SHIP = "repair_ship"
 
 
+class ShipRole(Enum):
+    """Functional role of a ship within a fleet."""
+
+    COMMAND = "command"
+    ASSAULT = "assault"
+    SUPPORT = "support"
+    SCOUT = "scout"
+    TRANSPORT = "transport"
+    SURVEY = "survey"
+    MINER = "miner"
+
+
+class OfficerRank(Enum):
+    """Ranks for naval officers."""
+
+    CAPTAIN = "captain"
+    COMMANDER = "commander"
+    COMMODORE = "commodore"
+    ADMIRAL = "admiral"
+
+
 class ComponentType(Enum):
     """Types of ship components."""
     ENGINE = "engine"

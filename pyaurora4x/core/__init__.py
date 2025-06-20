@@ -14,6 +14,7 @@ from pyaurora4x.core.models import (
     Vector3D,
     AsteroidBelt,
     Technology,
+    Officer,
 )
 from pyaurora4x.core.enums import (
     PlanetType,
@@ -21,6 +22,8 @@ from pyaurora4x.core.enums import (
     FleetStatus,
     TechnologyType,
     ShipType,
+    ShipRole,
+    OfficerRank,
 )
 from pyaurora4x.core.events import EventManager, GameEvent
 from pyaurora4x.core.utils import distance_3d, angle_between_vectors
@@ -35,11 +38,14 @@ __all__ = [
     "AsteroidBelt",
     "Vector3D",
     "Technology",
+    "Officer",
     "PlanetType",
     "StarType",
     "FleetStatus",
     "TechnologyType",
     "ShipType",
+    "ShipRole",
+    "OfficerRank",
     "EventManager",
     "GameEvent",
     "distance_3d",

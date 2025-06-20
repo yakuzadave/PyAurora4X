@@ -443,6 +443,37 @@ class GameSimulation:
         fleet.estimated_arrival = None
         fleet.status = FleetStatus.IDLE
         return True
+
+    def start_combat(self, attacker_id: str, defender_id: str) -> Optional[str]:
+        """Resolve a simple combat between two fleets.
+
+        The fleet with the greater number of ships is declared the winner.
+
+        Args:
+            attacker_id: Attacking fleet ID.
+            defender_id: Defending fleet ID.
+
+        Returns:
+            The winning fleet ID, or ``None`` if combat could not start.
+        """
+        attacker = self.get_fleet(attacker_id)
+        defender = self.get_fleet(defender_id)
+        if not attacker or not defender:
+            return None
+
+        attacker.status = FleetStatus.IN_COMBAT
+        defender.status = FleetStatus.IN_COMBAT
+
+        attacker_strength = len(attacker.ships)
+        defender_strength = len(defender.ships)
+
+        winner = attacker if attacker_strength >= defender_strength else defender
+        loser = defender if winner is attacker else attacker
+
+        winner.status = FleetStatus.IDLE
+        loser.status = FleetStatus.IDLE
+
+        return winner.id
     
     def get_game_state(self) -> Dict[str, Any]:
         """Get the current game state for saving."""

@@ -140,6 +140,7 @@ contribute new documents.
 - [docs/streamlit_dashboard.md](docs/streamlit_dashboard.md) – How to launch the Streamlit dashboard.
 - [docs/jump_points.md](docs/jump_points.md) – Details on jump point mechanics and FTL travel.
 - [docs/colony_management.md](docs/colony_management.md) – Overview of colony growth and resource production.
+- [docs/fleet_combat.md](docs/fleet_combat.md) – Overview of combat and command features.
 
 
 ## License
