@@ -9,7 +9,11 @@ from pyaurora4x.core.models import (
     Vector3D, Empire, Fleet, Ship, Colony, StarSystem, Planet, Technology
 )
 from pyaurora4x.core.enums import (
-    PlanetType, StarType, FleetStatus, TechnologyType
+    PlanetType,
+    StarType,
+    FleetStatus,
+    TechnologyType,
+    ShipRole,
 )
 
 
@@ -277,6 +281,7 @@ class TestShip:
         assert ship.fuel == 100.0
         assert ship.condition == 100.0
         assert ship.structure == 100.0
+        assert ship.role == ShipRole.SUPPORT
     
     def test_ship_defaults(self):
         """Test ship default values."""
@@ -292,6 +297,7 @@ class TestShip:
         assert ship.armor == 0.0
         assert len(ship.current_orders) == 0
         assert not ship.automation_enabled
+        assert ship.role == ShipRole.SUPPORT
 
 
 class TestColony:

@@ -15,6 +15,8 @@ from pyaurora4x.core.enums import (
     FleetStatus,
     TechnologyType,
     ShipType,
+    ShipRole,
+    OfficerRank,
 )
 
 
@@ -104,6 +106,17 @@ class Ship(BaseModel):
     # Orders and AI
     current_orders: List[str] = Field(default_factory=list)
     automation_enabled: bool = False
+    role: ShipRole = ShipRole.SUPPORT
+
+
+class Officer(BaseModel):
+    """Represents a fleet officer."""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    rank: OfficerRank = OfficerRank.CAPTAIN
+    experience: float = 0.0
+    assigned_fleet_id: Optional[str] = None
 
 
 class Fleet(BaseModel):
@@ -120,6 +133,8 @@ class Fleet(BaseModel):
 
     # Fleet composition
     ships: List[str] = Field(default_factory=list)  # Ship IDs
+    commander_id: Optional[str] = None
+    officers: List[str] = Field(default_factory=list)
 
     # Status and orders
     status: FleetStatus = FleetStatus.IDLE
