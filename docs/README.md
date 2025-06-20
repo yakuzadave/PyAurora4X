@@ -13,6 +13,7 @@ for documentation and as a guide when adding new files.
 - [Contribution Guide](contributing.md)
 - [Game Turns](game_turns.md) – Explanation of the turn/tick system.
 - [Streamlit Dashboard](streamlit_dashboard.md) – Launch a Streamlit dashboard to inspect game data.
+- [Colony Management](colony_management.md) – Population growth and mining basics.
 
 
 ## Contributing New Documentation

@@ -11,6 +11,7 @@ A Python-based 4X space strategy game with realistic orbital mechanics, terminal
 - **Research System**: Technology tree with prerequisites and unlocks
 - **Fleet Management**: Design ships, manage fleets, and conduct space operations
 - **Save/Load System**: Persistent game states with TinyDB and JSON support
+- **Colony Management**: Colonies grow and produce resources over time
 - **Comprehensive Testing**: Full test coverage with pytest
 
 ## Installation
@@ -138,6 +139,7 @@ contribute new documents.
 - [docs/game_turns.md](docs/game_turns.md) – Overview of the turn and tick system.
 - [docs/streamlit_dashboard.md](docs/streamlit_dashboard.md) – How to launch the Streamlit dashboard.
 - [docs/jump_points.md](docs/jump_points.md) – Details on jump point mechanics and FTL travel.
+- [docs/colony_management.md](docs/colony_management.md) – Overview of colony growth and resource production.
 
 
 ## License
