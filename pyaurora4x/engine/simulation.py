@@ -143,23 +143,9 @@ class GameSimulation:
         home_planet = None
 
         for planet in home_system.planets:
-            if planet.planet_type == "terrestrial":
+            if planet.planet_type == PlanetType.TERRESTRIAL:
                 home_planet = planet
                 break
-
-
-        if not home_system.planets:
-            default_planet = Planet(
-                name="Homeworld",
-                planet_type=PlanetType.TERRESTRIAL,
-                mass=1.0,
-                radius=1.0,
-                surface_temperature=288.0,
-                orbital_distance=1.0,
-                orbital_period=1.0,
-                position=Vector3D(),
-            )
-            home_system.planets.append(default_planet)
 
         if not home_planet:
             home_planet = home_system.planets[0]
