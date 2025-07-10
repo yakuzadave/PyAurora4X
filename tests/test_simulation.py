@@ -206,6 +206,52 @@ class TestGameSimulation:
         mock_instance.generate_system.assert_called()
         assert len(sim.star_systems) == 1
 
+    @patch("pyaurora4x.engine.simulation.StarSystemGenerator")
+    def test_player_home_planet_prefers_terrestrial(self, mock_generator):
+        """Player home planet should be terrestrial when available."""
+        mock_instance = Mock()
+        mock_generator.return_value = mock_instance
+
+        mock_system = StarSystem(
+            name="Mock System",
+            star_type=StarType.G_DWARF,
+            star_mass=1.0,
+            star_luminosity=1.0,
+            planets=[
+                Planet(
+                    name="Gas Giant",
+                    planet_type=PlanetType.GAS_GIANT,
+                    mass=50.0,
+                    radius=10.0,
+                    surface_temperature=100.0,
+                    orbital_distance=5.0,
+                    orbital_period=5.0,
+                    position=Vector3D(),
+                ),
+                Planet(
+                    name="Terra",
+                    planet_type=PlanetType.TERRESTRIAL,
+                    mass=1.0,
+                    radius=1.0,
+                    surface_temperature=288.0,
+                    orbital_distance=1.0,
+                    orbital_period=1.0,
+                    position=Vector3D(),
+                ),
+            ],
+        )
+        mock_instance.generate_system.return_value = mock_system
+
+        sim = GameSimulation()
+        sim.initialize_new_game(num_systems=1, num_empires=1)
+
+        player_empire = sim.get_player_empire()
+        assert player_empire is not None
+        home_planet = next(
+            p for p in mock_system.planets if p.id == player_empire.home_planet_id
+        )
+        assert home_planet.planet_type == PlanetType.TERRESTRIAL
+
     def test_empire_creation(self):
         """Test empire creation during initialization."""
         sim = GameSimulation()
