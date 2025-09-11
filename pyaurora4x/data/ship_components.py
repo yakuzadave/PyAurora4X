@@ -35,8 +35,9 @@ class ShipComponentManager:
         self.designs: Dict[str, ShipDesign] = {}
         self.components_loaded = False
         
-        # Try to load component data
+        # Try to load component and design data
         self.load_components()
+        self.load_designs()
     
     def load_components(self) -> bool:
         """
@@ -582,4 +583,199 @@ class ShipComponentManager:
         
         logger.info(f"Ship components saved to: {file_path}")
         return str(file_path)
+    
+    def load_designs(self, file_path: Optional[str] = None) -> bool:
+        """
+        Load ship designs from a file.
+        
+        Args:
+            file_path: Optional custom file path
+            
+        Returns:
+            True if loading was successful
+        """
+        if file_path is None:
+            file_path = self.data_directory / "ship_designs.json"
+        else:
+            file_path = Path(file_path)
+        
+        if not file_path.exists():
+            logger.info(f"No designs file found: {file_path}")
+            return True  # Not an error - just no designs to load
+        
+        try:
+            with open(file_path, 'r') as f:
+                design_data = json.load(f)
+            
+            self._load_designs_from_data(design_data)
+            logger.info(f"Loaded {len(self.designs)} ship designs")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error loading designs: {e}")
+            return False
+    
+    def _load_designs_from_data(self, design_data: Dict) -> None:
+        """Load designs from parsed JSON data."""
+        self.designs.clear()
+        
+        for design_id, design_info in design_data.get("designs", {}).items():
+            try:
+                # Parse ship type
+                ship_type_str = design_info.get("ship_type", "frigate")
+                ship_type = self._parse_ship_type(ship_type_str)
+                
+                # Create design object
+                design = ShipDesign(
+                    id=design_id,
+                    name=design_info.get("name", design_id.replace("_", " ").title()),
+                    ship_type=ship_type,
+                    components=design_info.get("components", []),
+                    total_mass=design_info.get("total_mass", 0.0),
+                    total_cost=design_info.get("total_cost", 0),
+                    crew_requirement=design_info.get("crew_requirement", 0),
+                    is_obsolete=design_info.get("is_obsolete", False)
+                )
+                
+                self.designs[design_id] = design
+                
+            except Exception as e:
+                logger.error(f"Error loading design {design_id}: {e}")
+    
+    def _parse_ship_type(self, type_str: str) -> ShipType:
+        """Parse ship type from string."""
+        type_mapping = {
+            "fighter": ShipType.FIGHTER,
+            "corvette": ShipType.CORVETTE,
+            "frigate": ShipType.FRIGATE,
+            "destroyer": ShipType.DESTROYER,
+            "cruiser": ShipType.CRUISER,
+            "battlecruiser": ShipType.BATTLECRUISER,
+            "battleship": ShipType.BATTLESHIP,
+            "dreadnought": ShipType.DREADNOUGHT,
+            "carrier": ShipType.CARRIER,
+            "transport": ShipType.TRANSPORT,
+            "freighter": ShipType.FREIGHTER,
+            "mining_ship": ShipType.MINING_SHIP,
+            "survey_ship": ShipType.SURVEY_SHIP,
+            "colony_ship": ShipType.COLONY_SHIP,
+            "construction_ship": ShipType.CONSTRUCTION_SHIP,
+            "tanker": ShipType.TANKER,
+            "repair_ship": ShipType.REPAIR_SHIP,
+        }
+        
+        return type_mapping.get(type_str.lower(), ShipType.FRIGATE)
+    
+    def save_designs(self, file_path: Optional[str] = None) -> str:
+        """
+        Save ship designs to a file.
+        
+        Args:
+            file_path: Optional custom file path
+            
+        Returns:
+            Path to saved file
+        """
+        if file_path is None:
+            file_path = self.data_directory / "ship_designs.json"
+        else:
+            file_path = Path(file_path)
+        
+        # Create data structure
+        design_data = {
+            "version": "1.0",
+            "created_date": "auto-generated",
+            "designs": {}
+        }
+        
+        for design_id, design in self.designs.items():
+            ship_type = design.ship_type.value if hasattr(design.ship_type, 'value') else str(design.ship_type)
+            design_data["designs"][design_id] = {
+                "name": design.name,
+                "ship_type": ship_type,
+                "components": design.components,
+                "total_mass": design.total_mass,
+                "total_cost": design.total_cost,
+                "crew_requirement": design.crew_requirement,
+                "is_obsolete": design.is_obsolete
+            }
+        
+        # Ensure directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Save file
+        with open(file_path, 'w') as f:
+            json.dump(design_data, f, indent=2)
+        
+        logger.info(f"Ship designs saved to: {file_path}")
+        return str(file_path)
+    
+    def import_designs(self, import_path: str) -> int:
+        """
+        Import designs from another file.
+        
+        Args:
+            import_path: Path to the import file
+            
+        Returns:
+            Number of designs imported
+        """
+        import_file = Path(import_path)
+        
+        if not import_file.exists():
+            raise FileNotFoundError(f"Import file not found: {import_path}")
+        
+        with open(import_file, 'r') as f:
+            import_data = json.load(f)
+        
+        initial_count = len(self.designs)
+        self._load_designs_from_data(import_data)
+        imported_count = len(self.designs) - initial_count
+        
+        logger.info(f"Imported {imported_count} designs from {import_path}")
+        return imported_count
+    
+    def export_design(self, design_id: str, export_path: str) -> str:
+        """
+        Export a single design to a file.
+        
+        Args:
+            design_id: ID of the design to export
+            export_path: Destination file path
+            
+        Returns:
+            Path to exported file
+        """
+        design = self.get_ship_design(design_id)
+        if not design:
+            raise ValueError(f"Design not found: {design_id}")
+        
+        export_file = Path(export_path)
+        
+        # Create export data
+        ship_type = design.ship_type.value if hasattr(design.ship_type, 'value') else str(design.ship_type)
+        export_data = {
+            "version": "1.0",
+            "exported_design": {
+                design_id: {
+                    "name": design.name,
+                    "ship_type": ship_type,
+                    "components": design.components,
+                    "total_mass": design.total_mass,
+                    "total_cost": design.total_cost,
+                    "crew_requirement": design.crew_requirement,
+                    "is_obsolete": design.is_obsolete
+                }
+            }
+        }
+        
+        # Ensure directory exists
+        export_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Save file
+        with open(export_file, 'w') as f:
+            json.dump(export_data, f, indent=2)
+        
+        logger.info(f"Design '{design.name}' exported to: {export_file}")
+        return str(export_file)
 

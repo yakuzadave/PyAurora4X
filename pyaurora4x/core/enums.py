@@ -187,6 +187,56 @@ class VictoryCondition(Enum):
     CUSTOM = "custom"              # Custom win conditions
 
 
+class BuildingType(Enum):
+    """Types of colonial buildings and infrastructure."""
+    
+    # Mining and resource extraction
+    MINE = "mine"
+    AUTOMATED_MINE = "automated_mine"
+    DEEP_CORE_MINE = "deep_core_mine"
+    
+    # Manufacturing and production
+    FACTORY = "factory"
+    AUTOMATED_FACTORY = "automated_factory"
+    NANO_FACTORY = "nano_factory"
+    
+    # Research facilities
+    RESEARCH_LAB = "research_lab"
+    ADVANCED_LAB = "advanced_lab"
+    THEORETICAL_PHYSICS_LAB = "theoretical_physics_lab"
+    
+    # Population support
+    HABITAT = "habitat"
+    LIFE_SUPPORT = "life_support"
+    RECREATION_CENTER = "recreation_center"
+    
+    # Military and defense
+    DEFENSE_STATION = "defense_station"
+    MISSILE_BASE = "missile_base"
+    SHIELD_GENERATOR = "shield_generator"
+    
+    # Infrastructure
+    POWER_PLANT = "power_plant"
+    FUSION_PLANT = "fusion_plant"
+    SPACEPORT = "spaceport"
+    ORBITAL_SHIPYARD = "orbital_shipyard"
+    
+    # Specialized facilities
+    SENSOR_ARRAY = "sensor_array"
+    COMMUNICATION_HUB = "communication_hub"
+    TERRAFORM_PROCESSOR = "terraform_processor"
+
+
+class ConstructionStatus(Enum):
+    """Status of construction projects."""
+    
+    PLANNED = "planned"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    ON_HOLD = "on_hold"
+
+
 class GameDifficulty(Enum):
     """Game difficulty levels."""
     EASY = "easy"

@@ -11,6 +11,7 @@ from pyaurora4x.ui.widgets.empire_stats import EmpireStatsWidget
 from pyaurora4x.ui.widgets.load_dialog import LoadGameDialog
 from pyaurora4x.ui.widgets.planet_select_dialog import PlanetSelectDialog
 from pyaurora4x.ui.widgets.ship_design_panel import ShipDesignPanel
+from pyaurora4x.ui.widgets.colony_management_panel import ColonyManagementPanel
 
 __all__ = [
     "StarSystemView",
@@ -20,4 +21,5 @@ __all__ = [
     "LoadGameDialog",
     "PlanetSelectDialog",
     "ShipDesignPanel",
+    "ColonyManagementPanel",
 ]

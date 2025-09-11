@@ -29,6 +29,7 @@ from pyaurora4x.engine.scheduler import GameScheduler
 from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
 from pyaurora4x.engine.turn_manager import GameTurnManager
+from pyaurora4x.engine.infrastructure_manager import ColonyInfrastructureManager
 
 from pyaurora4x.data.tech_tree import TechTreeManager
 
@@ -63,6 +64,7 @@ class GameSimulation:
         self.system_generator = StarSystemGenerator()
         self.tech_manager = TechTreeManager()
         self.turn_manager = GameTurnManager()
+        self.infrastructure_manager = ColonyInfrastructureManager()
         
         # Game state
         self.is_running = False
@@ -380,18 +382,33 @@ class GameSimulation:
             # `_process_ai_empire` and should not be duplicated here.
 
     def _update_colonies(self, delta_seconds: float) -> None:
-        """Update population and resource production for all colonies."""
+        """Update population, resource production, and construction for all colonies."""
         seconds_per_year = 365.25 * 24 * 3600
+        
         for colony in self.colonies.values():
-            # Population growth
+            # Initialize infrastructure if needed
+            if colony.id not in self.infrastructure_manager.colony_states:
+                self.infrastructure_manager.initialize_colony_infrastructure(colony)
+            
+            # Population growth (capped by max population)
             growth = colony.population * (colony.growth_rate / seconds_per_year) * delta_seconds
-            colony.population += int(growth)
-
-            # Mining infrastructure produces minerals
-            mines = colony.infrastructure.get("mine", 0)
-            if mines > 0:
-                produced = mines * 10.0 * (delta_seconds / 86400)
-                colony.stockpiles["minerals"] = colony.stockpiles.get("minerals", 0.0) + produced
+            colony.population = min(colony.max_population, colony.population + int(growth))
+            
+            # Process construction projects
+            empire = self.empires.get(colony.empire_id)
+            if empire:
+                self.infrastructure_manager.process_construction(colony, empire, delta_seconds)
+            
+            # Apply daily resource production from buildings
+            state = self.infrastructure_manager.get_colony_state(colony.id)
+            if state:
+                # Convert daily rates to per-second and apply
+                seconds_per_day = 86400.0
+                
+                for resource, daily_amount in state.net_production.items():
+                    per_second_amount = daily_amount / seconds_per_day
+                    resource_change = per_second_amount * delta_seconds
+                    colony.stockpiles[resource] = max(0, colony.stockpiles.get(resource, 0.0) + resource_change)
 
     
     def pause(self) -> None:
@@ -428,6 +445,14 @@ class GameSimulation:
     def get_fleet(self, fleet_id: str) -> Optional[Fleet]:
         """Get a fleet by ID."""
         return self.fleets.get(fleet_id)
+    
+    def get_infrastructure_manager(self) -> ColonyInfrastructureManager:
+        """Get the colony infrastructure manager."""
+        return self.infrastructure_manager
+    
+    def get_colony(self, colony_id: str) -> Optional[Colony]:
+        """Get a colony by ID."""
+        return self.colonies.get(colony_id)
 
     def jump_fleet(self, fleet_id: str, target_system_id: str) -> bool:
         """Instantly move a fleet through a jump point to another system."""

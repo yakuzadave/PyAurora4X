@@ -21,7 +21,10 @@ from pyaurora4x.ui.widgets.fleet_panel import FleetPanel
 from pyaurora4x.ui.widgets.research_panel import ResearchPanel
 from pyaurora4x.ui.widgets.empire_stats import EmpireStatsWidget
 from pyaurora4x.ui.widgets.load_dialog import LoadGameDialog
+from pyaurora4x.ui.widgets.ship_design_panel import ShipDesignPanel
+from pyaurora4x.ui.widgets.colony_management_panel import ColonyManagementPanel
 from pyaurora4x.data.save_manager import SaveManager
+from pyaurora4x.data.ship_components import ShipComponentManager
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +161,82 @@ class PyAurora4XApp(App):
         border: solid $accent;
         background: $panel;
     }
+    
+    /* Ship Design Panel Styles */
+    #design_container {
+        padding: 1;
+    }
+    
+    #design_header {
+        height: auto;
+        padding: 1;
+        border: solid $primary;
+        margin-bottom: 1;
+    }
+    
+    .title {
+        color: $accent;
+        text-style: bold;
+    }
+    
+    .subtitle {
+        color: $primary;
+        text-style: bold;
+    }
+    
+    .label {
+        width: auto;
+        min-width: 12;
+    }
+    
+    #main_content {
+        height: 1fr;
+    }
+    
+    #components_panel {
+        width: 35%;
+        margin-right: 1;
+    }
+    
+    #design_panel {
+        width: 35%;
+        margin-right: 1;
+    }
+    
+    #validation_panel {
+        width: 30%;
+    }
+    
+    #design_actions {
+        height: auto;
+        padding: 1;
+        margin-top: 1;
+    }
+    
+    .success {
+        color: $success;
+    }
+    
+    .error {
+        color: $error;
+    }
+    
+    .warning {
+        color: $warning;
+    }
+    
+    DataTable {
+        height: 1fr;
+        margin: 1 0;
+    }
+    
+    Input {
+        margin: 0 1;
+    }
+    
+    Select {
+        margin: 0 1;
+    }
     """
     
     BINDINGS = [
@@ -168,6 +247,8 @@ class PyAurora4XApp(App):
         Binding("1", "show_systems", "Systems"),
         Binding("2", "show_fleets", "Fleets"),
         Binding("3", "show_research", "Research"),
+        Binding("4", "show_ship_design", "Ship Design"),
+        Binding("5", "show_colonies", "Colonies"),
         Binding("f1", "focus_fleet_1", "Fleet 1"),
         Binding("f2", "focus_fleet_2", "Fleet 2"),
         Binding("f3", "focus_fleet_3", "Fleet 3"),
@@ -180,6 +261,7 @@ class PyAurora4XApp(App):
         super().__init__(**kwargs)
         self.simulation: Optional[GameSimulation] = None
         self.save_manager = SaveManager()
+        self.component_manager = ShipComponentManager()
         self.current_view = "systems"
         self.auto_save_interval = 300  # 5 minutes
         self.last_auto_save = 0
@@ -199,6 +281,8 @@ class PyAurora4XApp(App):
                     yield StarSystemView(id="system_view")
                     yield FleetPanel(id="fleet_view", classes="hidden")
                     yield ResearchPanel(id="research_view", classes="hidden")
+                    yield ShipDesignPanel(self.component_manager, id="design_view", classes="hidden")
+                    yield ColonyManagementPanel(id="colony_view", classes="hidden")
                 
                 # Right panel - empire stats and controls  
                 with Vertical(id="side_panel", classes="panel"):
@@ -286,6 +370,28 @@ class PyAurora4XApp(App):
             research_panel.tech_manager = self.simulation.tech_manager
             research_panel.update_empire(player_empire)
         research_panel.refresh()
+        
+        # Update ship design panel
+        design_panel = self.query_one("#design_view", ShipDesignPanel)
+        if player_empire:
+            design_panel.set_empire(player_empire)
+        design_panel.refresh()
+        
+        # Update colony management panel
+        colony_panel = self.query_one("#colony_view", ColonyManagementPanel)
+        if player_empire and player_empire.colonies:
+            # Initialize the panel with infrastructure manager and event manager
+            if not colony_panel.infrastructure_manager:
+                colony_panel.infrastructure_manager = self.simulation.get_infrastructure_manager()
+            if not colony_panel.event_manager:
+                colony_panel.event_manager = self.simulation.event_manager
+            
+            # Update with first colony as default
+            first_colony_id = player_empire.colonies[0]
+            first_colony = self.simulation.get_colony(first_colony_id)
+            if first_colony:
+                colony_panel.update_colony(first_colony, player_empire)
+        colony_panel.refresh()
         
         # Update empire stats
         empire_stats = self.query_one("#empire_stats", EmpireStatsWidget)
@@ -385,6 +491,14 @@ class PyAurora4XApp(App):
     def action_show_research(self) -> None:
         """Show the research view."""
         self._switch_view("research")
+    
+    def action_show_ship_design(self) -> None:
+        """Show the ship design view."""
+        self._switch_view("ship_design")
+    
+    def action_show_colonies(self) -> None:
+        """Show the colony management view."""
+        self._switch_view("colonies")
 
     def _focus_fleet_index(self, index: int) -> None:
         """Focus and highlight a fleet by index."""
@@ -413,6 +527,8 @@ class PyAurora4XApp(App):
         self.query_one("#system_view").add_class("hidden")
         self.query_one("#fleet_view").add_class("hidden") 
         self.query_one("#research_view").add_class("hidden")
+        self.query_one("#design_view").add_class("hidden")
+        self.query_one("#colony_view").add_class("hidden")
         
         # Show selected view
         if view_name == "systems":
@@ -421,6 +537,10 @@ class PyAurora4XApp(App):
             self.query_one("#fleet_view").remove_class("hidden")
         elif view_name == "research":
             self.query_one("#research_view").remove_class("hidden")
+        elif view_name == "ship_design":
+            self.query_one("#design_view").remove_class("hidden")
+        elif view_name == "colonies":
+            self.query_one("#colony_view").remove_class("hidden")
         
         self.current_view = view_name
         
@@ -439,6 +559,8 @@ class PyAurora4XApp(App):
         message_log.write_line("  1 - Show star systems")
         message_log.write_line("  2 - Show fleets")
         message_log.write_line("  3 - Show research")
+        message_log.write_line("  4 - Show ship design")
+        message_log.write_line("  5 - Show colonies")
         message_log.write_line("  F1-F5 - Focus fleets 1-5")
         message_log.write_line("  h - Show this help")
     
@@ -463,6 +585,10 @@ class PyAurora4XApp(App):
             self.action_show_fleets()
         elif key == "3":
             self.action_show_research()
+        elif key == "4":
+            self.action_show_ship_design()
+        elif key == "5":
+            self.action_show_colonies()
         elif key == "q":
             self.action_quit()
         elif key == "s":

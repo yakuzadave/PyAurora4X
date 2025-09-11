@@ -17,8 +17,10 @@ from pyaurora4x.core.enums import (
     ShipType,
     ShipRole,
     OfficerRank,
+    ComponentType,
+    BuildingType,
+    ConstructionStatus,
 )
-
 
 class Vector3D(BaseModel):
     """3D vector for positions and velocities."""
@@ -158,16 +160,29 @@ class Colony(BaseModel):
 
     # Population and infrastructure
     population: int = 1000
-    infrastructure: Dict[str, int] = Field(default_factory=dict)
-
+    max_population: int = 1000  # Determined by habitats and planet habitability
+    infrastructure: Dict[str, int] = Field(default_factory=dict)  # Legacy support
+    
+    # New infrastructure system
+    buildings: Dict[str, str] = Field(default_factory=dict)  # building_id -> template_id
+    construction_queue: List[str] = Field(default_factory=list)  # construction_project_ids
+    
     # Resources and production
     stockpiles: Dict[str, float] = Field(default_factory=dict)
     production: Dict[str, float] = Field(default_factory=dict)
+    consumption: Dict[str, float] = Field(default_factory=dict)
+    
+    # Infrastructure stats (calculated)
+    power_generation: float = 0.0
+    power_consumption: float = 0.0
+    defense_rating: float = 0.0
+    research_output: float = 0.0
 
     # Colony status
     established_date: float = 0.0
     happiness: float = 50.0
     growth_rate: float = 1.0
+    efficiency: float = 1.0  # Overall colony efficiency modifier
 
 
 class Planet(BaseModel):
