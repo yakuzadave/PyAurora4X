@@ -5,7 +5,7 @@ Manages the overall game state, time advancement, and coordination
 between different game systems.
 """
 
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, Tuple
 from datetime import datetime
 import logging
 import random
@@ -23,6 +23,7 @@ from pyaurora4x.core.models import (
 
 
 from pyaurora4x.core.enums import FleetStatus, PlanetType
+from pyaurora4x.core.events import EventCategory, EventPriority
 
 from pyaurora4x.core.events import EventManager
 from pyaurora4x.engine.scheduler import GameScheduler
@@ -30,6 +31,8 @@ from pyaurora4x.engine.star_system import StarSystemGenerator
 from pyaurora4x.engine.orbital_mechanics import OrbitalMechanics
 from pyaurora4x.engine.turn_manager import GameTurnManager
 from pyaurora4x.engine.infrastructure_manager import ColonyInfrastructureManager
+from pyaurora4x.engine.jump_point_manager import JumpPointManager
+from pyaurora4x.engine.victory_manager import VictoryManager
 
 from pyaurora4x.data.tech_tree import TechTreeManager
 
@@ -65,6 +68,8 @@ class GameSimulation:
         self.tech_manager = TechTreeManager()
         self.turn_manager = GameTurnManager()
         self.infrastructure_manager = ColonyInfrastructureManager()
+        self.jump_point_manager = JumpPointManager()
+        self.victory_manager = VictoryManager(event_manager=self.event_manager)
         
         # Game state
         self.is_running = False
@@ -98,8 +103,10 @@ class GameSimulation:
         
         # Generate star systems
         self._generate_star_systems(num_systems)
-        # Link systems via jump points
-        self.system_generator.generate_jump_network(list(self.star_systems.values()))
+        # Generate enhanced jump point network
+        self.jump_point_manager.generate_enhanced_jump_network(
+            list(self.star_systems.values()), connectivity_level=0.25
+        )
 
         # Create player empire
         self._create_player_empire()
@@ -109,6 +116,9 @@ class GameSimulation:
         
         # Initialize orbital mechanics for all systems
         self._initialize_orbital_mechanics()
+        
+        # Initialize victory tracking
+        self._initialize_victory_tracking()
         
         # Schedule initial events
         self._schedule_initial_events()
@@ -280,6 +290,13 @@ class GameSimulation:
         # Colony management
         self._update_colonies(delta_seconds)
         
+        # Jump point operations
+        self._process_jump_point_operations(delta_seconds)
+        
+        # Check victory conditions (every 10 seconds of game time to avoid excessive checking)
+        if int(self.current_time) % 10 == 0 and int(old_time) % 10 != 0:
+            self.check_victory_conditions()
+        
         logger.debug(f"Advanced time by {delta_seconds}s to {self.current_time}")
     
     def _update_orbital_positions(self) -> None:
@@ -296,32 +313,184 @@ class GameSimulation:
     def _process_ai_empire(self, empire: Empire) -> None:
         """Process AI decisions for a single empire."""
         logger.debug(f"Processing AI for empire: {empire.name}")
-
-        # Move idle fleets using orbital transfer calculations
+        
+        # Initialize AI jump point knowledge
+        self.jump_point_manager.initialize_empire_knowledge(empire.id)
+        
+        # Process idle fleets with enhanced AI behavior
         for fleet_id in empire.fleets:
             fleet = self.fleets.get(fleet_id)
-            if not fleet or fleet.status != FleetStatus.IDLE:
+            if not fleet:
                 continue
+            
+            self._process_ai_fleet_behavior(fleet, empire)
+        
+        # Strategic AI decisions for exploration and expansion
+        self._process_ai_strategic_decisions(empire)
 
-            system = self.star_systems.get(fleet.system_id)
-            if not system or not system.planets:
+    
+    def _process_ai_fleet_behavior(self, fleet: Fleet, empire: Empire) -> None:
+        """Process AI behavior for a single fleet."""
+        if fleet.status not in [FleetStatus.IDLE, FleetStatus.ORBITING]:
+            return  # Fleet is busy
+        
+        system = self.star_systems.get(fleet.system_id)
+        if not system:
+            return
+        
+        # AI decision priorities (in order):
+        # 1. Explore unknown systems through jump points (30% chance)
+        # 2. Conduct exploration missions in current system (20% chance) 
+        # 3. Survey discovered but unmapped jump points (15% chance)
+        # 4. Move to planets within system (35% chance - fallback)
+        
+        decision_roll = random.random()
+        
+        if decision_roll < 0.30:
+            # Try to jump to unexplored systems
+            if self._ai_attempt_jump_exploration(fleet, empire):
+                return
+        
+        if decision_roll < 0.50:
+            # Start exploration mission in current system
+            if self._ai_attempt_system_exploration(fleet, empire):
+                return
+        
+        if decision_roll < 0.65:
+            # Survey jump points
+            if self._ai_attempt_jump_point_survey(fleet, empire):
+                return
+        
+        # Fallback: Move within system
+        self._ai_move_within_system(fleet, system)
+    
+    def _ai_attempt_jump_exploration(self, fleet: Fleet, empire: Empire) -> bool:
+        """AI attempts to jump to unexplored systems."""
+        available_jumps = self.get_available_jumps(fleet.id)
+        
+        if not available_jumps:
+            return False
+        
+        # Filter for accessible and unexplored targets
+        viable_jumps = []
+        for jump_info in available_jumps:
+            if not jump_info.get("can_jump"):
                 continue
-
-            target = random.choice(system.planets)
-            transfer = self.orbital_mechanics.calculate_transfer_orbit(
-                fleet.position, target.position, system.star_mass
-            )
-            fleet.destination = target.position.copy()
-            fleet.estimated_arrival = self.current_time + transfer["transfer_time"]
-            order = (
-                f"Transfer to {target.name} via {transfer['transfer_type']}"
-            )
-            fleet.current_orders.append(order)
-            fleet.status = FleetStatus.IN_TRANSIT
-            logger.debug(
-                f"{fleet.name} transferring to {target.name} (ETA {transfer['transfer_time']}s)"
-            )
-
+            
+            target_system_id = jump_info.get("target_system_id")
+            target_system = self.star_systems.get(target_system_id)
+            
+            if target_system and not target_system.is_explored:
+                # Prefer systems with lower exploration status
+                exploration_status = jump_info.get("target_exploration_status", {})
+                exploration_progress = exploration_status.get("exploration_progress", 0.0)
+                
+                # Weight by unexplored potential (lower progress = higher weight)
+                weight = max(0.1, 1.0 - exploration_progress)
+                viable_jumps.append((jump_info, weight))
+        
+        if not viable_jumps:
+            return False
+        
+        # Choose jump point with weighted random selection
+        total_weight = sum(weight for _, weight in viable_jumps)
+        if total_weight == 0:
+            return False
+        
+        roll = random.uniform(0, total_weight)
+        cumulative_weight = 0
+        
+        for jump_info, weight in viable_jumps:
+            cumulative_weight += weight
+            if roll <= cumulative_weight:
+                # Attempt the jump
+                jump_point_id = jump_info.get("jump_point_id")
+                success, message = self.initiate_fleet_jump(fleet.id, jump_point_id)
+                if success:
+                    logger.info(
+                        f"AI fleet {fleet.name} jumping to {jump_info.get('target_system_name', 'unknown system')}"
+                    )
+                    return True
+                break
+        
+        return False
+    
+    def _ai_attempt_system_exploration(self, fleet: Fleet, empire: Empire) -> bool:
+        """AI attempts to start exploration mission in current system."""
+        system = self.star_systems.get(fleet.system_id)
+        if not system:
+            return False
+        
+        # Check if system needs exploration
+        exploration_status = self.get_system_exploration_status(system.id, empire.id)
+        exploration_progress = exploration_status.get("exploration_progress", 0.0)
+        survey_completeness = exploration_status.get("survey_completeness", 0.0)
+        
+        # Don't explore if system is already well explored
+        if exploration_progress > 0.8 and survey_completeness > 0.8:
+            return False
+        
+        # Choose mission type based on current status
+        if survey_completeness < 0.5:
+            mission_type = "survey"
+        else:
+            mission_type = "explore"
+        
+        success, message = self.start_fleet_exploration(fleet.id, mission_type)
+        if success:
+            logger.info(f"AI fleet {fleet.name} starting {mission_type} mission in {system.name}")
+            return True
+        
+        return False
+    
+    def _ai_attempt_jump_point_survey(self, fleet: Fleet, empire: Empire) -> bool:
+        """AI attempts to survey discovered but unmapped jump points."""
+        system = self.star_systems.get(fleet.system_id)
+        if not system:
+            return False
+        
+        # Find jump points that need surveying
+        surveyable_points = []
+        for jump_point in system.jump_points:
+            if (jump_point.is_accessible_by(empire.id) and
+                jump_point.survey_level < 3 and
+                jump_point.survey_level > 0):  # Detected but not fully surveyed
+                surveyable_points.append(jump_point)
+        
+        if not surveyable_points:
+            return False
+        
+        # Choose a random jump point to survey
+        jump_point = random.choice(surveyable_points)
+        success, message = self.survey_jump_point(fleet.id, jump_point.id)
+        
+        if success:
+            logger.info(f"AI fleet {fleet.name} surveying jump point {jump_point.name}")
+            return True
+        
+        return False
+    
+    def _ai_move_within_system(self, fleet: Fleet, system: StarSystem) -> None:
+        """AI fallback: move fleet to a planet within the system."""
+        if not system.planets:
+            return
+        
+        target = random.choice(system.planets)
+        transfer = self.orbital_mechanics.calculate_transfer_orbit(
+            fleet.position, target.position, system.star_mass
+        )
+        fleet.destination = target.position.copy()
+        fleet.estimated_arrival = self.current_time + transfer["transfer_time"]
+        order = f"Transfer to {target.name} via {transfer['transfer_type']}"
+        fleet.current_orders.append(order)
+        fleet.status = FleetStatus.IN_TRANSIT
+        
+        logger.debug(
+            f"AI fleet {fleet.name} transferring to {target.name} (ETA {transfer['transfer_time']}s)"
+        )
+    
+    def _process_ai_strategic_decisions(self, empire: Empire) -> None:
+        """Process high-level strategic AI decisions for the empire."""
         # Start new research if labs are available
         active_count = (
             (1 if empire.current_research else 0)
@@ -344,6 +513,12 @@ class GameSimulation:
                     empire.research_projects[chosen.id] = 0.0
                 empire.research_allocation = {chosen.tech_type: 100.0}
                 logger.debug(f"{empire.name} started researching {chosen.name}")
+        
+        # Strategic expansion decisions could be added here:
+        # - Decide whether to colonize discovered systems
+        # - Plan long-term exploration routes
+        # - Coordinate multiple fleets for exploration
+        # - Build additional exploration fleets
 
     def _process_research(self, delta_seconds: float) -> None:
         """Advance research progress for all empires."""
@@ -380,6 +555,26 @@ class GameSimulation:
             # AI-specific behaviors like fleet movement and new research
             # assignment are handled by `_update_ai_empires` via
             # `_process_ai_empire` and should not be duplicated here.
+    
+    def _process_jump_point_operations(self, delta_seconds: float) -> None:
+        """Process jump point exploration, travel, and discovery operations."""
+        # Update jump point network
+        self.jump_point_manager.update_network(self.star_systems)
+        
+        # Process all jump point operations
+        results = self.jump_point_manager.process_turn_update(
+            self.fleets, self.star_systems, {}, self.current_time, delta_seconds
+        )
+        
+        # Log significant discoveries
+        for discovery in results.get("discoveries", []):
+            if discovery["type"] == "jump_point_detection":
+                fleet_name = self.fleets.get(discovery["fleet_id"], {}).get("name", "Unknown Fleet")
+                system_name = self.star_systems.get(discovery["system_id"], {}).get("name", "Unknown System")
+                logger.info(
+                    "Fleet %s discovered %d jump points in system %s", 
+                    fleet_name, len(discovery["jump_points"]), system_name
+                )
 
     def _update_colonies(self, delta_seconds: float) -> None:
         """Update population, resource production, and construction for all colonies."""
@@ -455,29 +650,93 @@ class GameSimulation:
         return self.colonies.get(colony_id)
 
     def jump_fleet(self, fleet_id: str, target_system_id: str) -> bool:
-        """Instantly move a fleet through a jump point to another system."""
+        """Instantly move a fleet through a jump point to another system (legacy method)."""
+        # Find the jump point to use
         fleet = self.fleets.get(fleet_id)
         if not fleet:
             return False
 
         current_system = self.star_systems.get(fleet.system_id)
-        target_system = self.star_systems.get(target_system_id)
-        if not current_system or not target_system:
+        if not current_system:
             return False
 
-        connection = next(
+        jump_point = next(
             (jp for jp in current_system.jump_points if jp.connects_to == target_system_id),
             None,
         )
-        if not connection:
+        if not jump_point:
             return False
 
-        fleet.system_id = target_system_id
-        fleet.position = Vector3D(**target_system.planets[0].position.model_dump()) if target_system.planets else Vector3D()
-        fleet.destination = None
-        fleet.estimated_arrival = None
-        fleet.status = FleetStatus.IDLE
-        return True
+        # Use the enhanced jump system for proper preparation and execution
+        success, message = self.jump_point_manager.initiate_fleet_jump(
+            fleet, jump_point.id, self.star_systems, {}, {}, self.current_time
+        )
+        
+        return success
+    
+    def initiate_fleet_jump(self, fleet_id: str, jump_point_id: str) -> Tuple[bool, str]:
+        """Initiate a jump for a fleet through a specific jump point."""
+        fleet = self.fleets.get(fleet_id)
+        if not fleet:
+            return False, "Fleet not found"
+        
+        return self.jump_point_manager.initiate_fleet_jump(
+            fleet, jump_point_id, self.star_systems, {}, {}, self.current_time
+        )
+    
+    def start_fleet_exploration(self, fleet_id: str, mission_type: str = "explore") -> Tuple[bool, str]:
+        """Start an exploration mission for a fleet."""
+        fleet = self.fleets.get(fleet_id)
+        if not fleet:
+            return False, "Fleet not found"
+        
+        system = self.star_systems.get(fleet.system_id)
+        if not system:
+            return False, "Fleet system not found"
+        
+        return self.jump_point_manager.start_exploration_mission(
+            fleet, system, mission_type, self.current_time
+        )
+    
+    def survey_jump_point(self, fleet_id: str, jump_point_id: str) -> Tuple[bool, str]:
+        """Start a survey mission for a specific jump point."""
+        fleet = self.fleets.get(fleet_id)
+        if not fleet:
+            return False, "Fleet not found"
+        
+        return self.jump_point_manager.survey_jump_point(
+            fleet, jump_point_id, self.star_systems, self.current_time
+        )
+    
+    def get_available_jumps(self, fleet_id: str) -> List[Dict[str, Any]]:
+        """Get available jump options for a fleet."""
+        fleet = self.fleets.get(fleet_id)
+        if not fleet:
+            return []
+        
+        return self.jump_point_manager.get_available_jumps_for_fleet(
+            fleet, self.star_systems, {}, {}
+        )
+    
+    def get_fleet_jump_status(self, fleet_id: str) -> Dict[str, Any]:
+        """Get current jump status for a fleet."""
+        return self.jump_point_manager.get_fleet_jump_status(fleet_id)
+    
+    def cancel_fleet_jump(self, fleet_id: str) -> Tuple[bool, str]:
+        """Cancel an active jump operation for a fleet."""
+        return self.jump_point_manager.cancel_fleet_jump(fleet_id)
+    
+    def get_system_exploration_status(self, system_id: str, empire_id: str) -> Dict[str, Any]:
+        """Get exploration status for a system."""
+        return self.jump_point_manager.get_system_exploration_status(system_id, empire_id)
+    
+    def get_empire_jump_network(self, empire_id: str) -> Dict[str, Any]:
+        """Get the jump network as known by a specific empire."""
+        return self.jump_point_manager.get_empire_jump_network(empire_id, self.star_systems)
+    
+    def get_jump_point_manager(self) -> "JumpPointManager":
+        """Get the jump point manager for direct access."""
+        return self.jump_point_manager
 
     def start_combat(self, attacker_id: str, defender_id: str) -> Optional[str]:
         """Resolve a simple combat between two fleets.
@@ -562,6 +821,7 @@ class GameSimulation:
         
         # Reinitialize systems
         self._initialize_orbital_mechanics()
+        self._initialize_victory_tracking()
         self._schedule_initial_events()
 
         self.is_running = True
@@ -573,3 +833,86 @@ class GameSimulation:
             return
         delta = self.turn_manager.advance_turn()
         self.advance_time(delta)
+    
+    def _initialize_victory_tracking(self) -> None:
+        """Initialize victory tracking for all empires."""
+        empires = list(self.empires.values())
+        total_systems = len(self.star_systems)
+        
+        self.victory_manager.initialize_game(
+            empires=empires,
+            total_systems=total_systems,
+            game_start_time=self.current_time
+        )
+        
+        logger.info("Victory tracking initialized for %d empires", len(empires))
+    
+    def check_victory_conditions(self) -> bool:
+        """Check victory conditions and handle game end if needed."""
+        if not self.is_running:
+            return True
+        
+        # Prepare data for victory checking
+        empires = list(self.empires.values())
+        systems = list(self.star_systems.values())
+        technologies = {}
+        
+        # Collect technology data for each empire
+        for empire in empires:
+            empire_techs = [tech for tech in empire.technologies.values() if tech.is_researched]
+            technologies[empire.id] = empire_techs
+        
+        # Update victory progress and check for game end
+        game_result = self.victory_manager.update_victory_progress(
+            empires=empires,
+            systems=systems,
+            fleets=self.fleets,
+            technologies=technologies,
+            current_time=self.current_time
+        )
+        
+        if game_result:
+            self._handle_game_end(game_result)
+            return True
+        
+        return False
+    
+    def _handle_game_end(self, game_result) -> None:
+        """Handle game end with victory result."""
+        self.is_running = False
+        
+        logger.info("Game ended: %s", game_result.game_end_reason)
+        
+        # Emit game end event
+        self.event_manager.create_and_post_event(
+            EventCategory.SYSTEM,
+            EventPriority.HIGH,
+            f"Game Ended: {game_result.game_end_reason}",
+            f"Game ended: {game_result.game_end_reason}",
+            self.current_time,
+            data={
+                "game_result": game_result.model_dump(),
+                "winner_empires": game_result.winner_empire_ids,
+                "total_duration": game_result.total_duration
+            }
+        )
+    
+    def get_victory_status(self, empire_id: str = None) -> Dict[str, Any]:
+        """Get victory status for an empire or all empires."""
+        if empire_id:
+            return self.victory_manager.get_victory_status(empire_id)
+        else:
+            return {
+                "leaderboard": self.victory_manager.get_leaderboard(),
+                "game_active": self.victory_manager.game_active,
+                "game_result": self.victory_manager.game_result.dict() if self.victory_manager.game_result else None
+            }
+    
+    def force_game_end(self, reason: str, winner_empire_ids: List[str] = None) -> None:
+        """Force the game to end with a specific reason."""
+        game_result = self.victory_manager.force_game_end(
+            reason=reason,
+            winner_empire_ids=winner_empire_ids or [],
+            current_time=self.current_time
+        )
+        self._handle_game_end(game_result)

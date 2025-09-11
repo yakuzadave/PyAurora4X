@@ -30,6 +30,10 @@ class EventCategory(Enum):
     EXPLORATION = "exploration"
     ECONOMY = "economy"
     NOTIFICATION = "notification"
+    VICTORY = "victory"
+    ACHIEVEMENT = "achievement"
+    UI = "ui"
+    GAME = "game"
 
 
 @dataclass

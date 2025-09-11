@@ -20,6 +20,9 @@ from pyaurora4x.core.enums import (
     ComponentType,
     BuildingType,
     ConstructionStatus,
+    JumpPointType,
+    JumpPointStatus,
+    ExplorationResult,
 )
 
 class Vector3D(BaseModel):
@@ -237,8 +240,77 @@ class JumpPoint(BaseModel):
     """Connection between two star systems for FTL travel."""
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = "Unknown Jump Point"
     position: Vector3D
     connects_to: str  # target star system id
+    
+    # Jump point characteristics
+    jump_point_type: JumpPointType = JumpPointType.NATURAL
+    status: JumpPointStatus = JumpPointStatus.UNKNOWN
+    stability: float = 1.0  # 0.0 to 1.0, affects travel reliability
+    size_class: int = 1  # 1-5, affects ship size limits and fuel costs
+    
+    # Discovery and exploration
+    discovered_by: Optional[str] = None  # Empire ID that discovered it
+    discovery_date: Optional[float] = None
+    survey_level: int = 0  # 0=undiscovered, 1=detected, 2=surveyed, 3=mapped
+    last_surveyed: Optional[float] = None
+    
+    # Travel requirements and characteristics
+    fuel_cost_modifier: float = 1.0  # Multiplier for fuel costs
+    travel_time_modifier: float = 1.0  # Multiplier for travel times
+    tech_requirement: Optional[str] = None  # Required technology to use
+    minimum_ship_size: int = 1  # Minimum ship size class
+    maximum_ship_size: int = 10  # Maximum ship size class
+    
+    # Strategic information
+    traffic_level: int = 0  # How heavily used this jump point is
+    last_transit: Optional[float] = None
+    empire_access: Dict[str, bool] = Field(default_factory=dict)  # Empire access permissions
+    
+    # Exploration data
+    exploration_difficulty: float = 1.0  # Affects discovery chance
+    survey_data: Dict[str, Any] = Field(default_factory=dict)
+    
+    def is_accessible_by(self, empire_id: str) -> bool:
+        """Check if an empire can use this jump point."""
+        if self.status in [JumpPointStatus.UNKNOWN, JumpPointStatus.DESTROYED]:
+            return False
+        
+        # Check if empire has discovered it
+        if self.survey_level == 0 and self.discovered_by != empire_id:
+            return False
+            
+        # Check access permissions
+        if empire_id in self.empire_access:
+            return self.empire_access[empire_id]
+            
+        # Default access for discoverer
+        return self.discovered_by == empire_id or self.status == JumpPointStatus.ACTIVE
+    
+    def calculate_fuel_cost(self, fleet_mass: float, ship_count: int = 1) -> float:
+        """Calculate fuel cost for a fleet to use this jump point."""
+        from pyaurora4x.core.enums import CONSTANTS
+        
+        base_cost = CONSTANTS["JUMP_FUEL_COST_BASE"]
+        per_ship_cost = CONSTANTS["JUMP_FUEL_COST_PER_SHIP"] * ship_count
+        mass_factor = (fleet_mass / 1000.0) ** 0.5  # Square root scaling
+        size_factor = self.size_class * 0.8  # Larger jump points are more efficient
+        
+        total_cost = (base_cost + per_ship_cost) * mass_factor * self.fuel_cost_modifier / size_factor
+        return max(10.0, total_cost)  # Minimum cost
+    
+    def calculate_travel_time(self, fleet_mass: float, ship_count: int = 1) -> float:
+        """Calculate travel time through this jump point."""
+        from pyaurora4x.core.enums import CONSTANTS
+        
+        base_time = CONSTANTS["JUMP_TIME_BASE"]
+        mass_factor = 1.0 + (fleet_mass / 10000.0)  # Heavier fleets take longer
+        ship_factor = 1.0 + (ship_count * 0.1)  # More ships take longer to coordinate
+        stability_factor = 2.0 - self.stability  # Unstable points take longer
+        
+        total_time = base_time * mass_factor * ship_factor * stability_factor * self.travel_time_modifier
+        return max(5.0, total_time)  # Minimum time
 
 
 class StarSystem(BaseModel):

@@ -18,6 +18,7 @@ from textual import events
 from pyaurora4x.engine.simulation import GameSimulation
 from pyaurora4x.ui.widgets.star_system_view import StarSystemView
 from pyaurora4x.ui.widgets.fleet_panel import FleetPanel
+from pyaurora4x.ui.widgets.fleet_command_panel import FleetCommandPanel
 from pyaurora4x.ui.widgets.research_panel import ResearchPanel
 from pyaurora4x.ui.widgets.empire_stats import EmpireStatsWidget
 from pyaurora4x.ui.widgets.load_dialog import LoadGameDialog
@@ -25,6 +26,8 @@ from pyaurora4x.ui.widgets.ship_design_panel import ShipDesignPanel
 from pyaurora4x.ui.widgets.colony_management_panel import ColonyManagementPanel
 from pyaurora4x.data.save_manager import SaveManager
 from pyaurora4x.data.ship_components import ShipComponentManager
+from pyaurora4x.engine.fleet_command_manager import FleetCommandManager
+from pyaurora4x.core.events import EventManager
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +252,8 @@ class PyAurora4XApp(App):
         Binding("3", "show_research", "Research"),
         Binding("4", "show_ship_design", "Ship Design"),
         Binding("5", "show_colonies", "Colonies"),
+        Binding("6", "show_fleet_command", "Fleet Command"),
+        Binding("f", "toggle_fleet_view", "Fleet View Toggle"),
         Binding("f1", "focus_fleet_1", "Fleet 1"),
         Binding("f2", "focus_fleet_2", "Fleet 2"),
         Binding("f3", "focus_fleet_3", "Fleet 3"),
@@ -262,7 +267,9 @@ class PyAurora4XApp(App):
         self.simulation: Optional[GameSimulation] = None
         self.save_manager = SaveManager()
         self.component_manager = ShipComponentManager()
+        self.fleet_command_manager = FleetCommandManager()
         self.current_view = "systems"
+        self.advanced_fleet_mode = False  # Toggle between basic and advanced fleet management
         self.auto_save_interval = 300  # 5 minutes
         self.last_auto_save = 0
         self.load_file: Optional[str] = None
@@ -280,6 +287,7 @@ class PyAurora4XApp(App):
                 with Vertical(id="main_view", classes="panel"):
                     yield StarSystemView(id="system_view")
                     yield FleetPanel(id="fleet_view", classes="hidden")
+                    yield FleetCommandPanel(self.fleet_command_manager, id="fleet_command_view", classes="hidden")
                     yield ResearchPanel(id="research_view", classes="hidden")
                     yield ShipDesignPanel(self.component_manager, id="design_view", classes="hidden")
                     yield ColonyManagementPanel(id="colony_view", classes="hidden")
@@ -363,6 +371,16 @@ class PyAurora4XApp(App):
             fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
             fleet_panel.update_fleets(fleets, self.simulation.current_time)
         fleet_panel.refresh()
+        
+        # Update fleet command panel
+        fleet_command_panel = self.query_one("#fleet_command_view", FleetCommandPanel)
+        if player_empire:
+            fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
+            # Initialize fleet command manager with event manager if available
+            if hasattr(self.simulation, 'event_manager') and not fleet_command_panel.event_manager:
+                fleet_command_panel.event_manager = self.simulation.event_manager
+            fleet_command_panel.update_fleets(fleets, player_empire)
+        fleet_command_panel.refresh()
         
         # Update research panel
         research_panel = self.query_one("#research_view", ResearchPanel)
@@ -499,6 +517,21 @@ class PyAurora4XApp(App):
     def action_show_colonies(self) -> None:
         """Show the colony management view."""
         self._switch_view("colonies")
+    
+    def action_show_fleet_command(self) -> None:
+        """Show the advanced fleet command view."""
+        self.advanced_fleet_mode = True
+        self._switch_view("fleets")
+    
+    def action_toggle_fleet_view(self) -> None:
+        """Toggle between basic and advanced fleet management views."""
+        self.advanced_fleet_mode = not self.advanced_fleet_mode
+        if self.current_view == "fleets":
+            self._switch_view("fleets")  # Refresh the fleet view with new mode
+        
+        message_log = self.query_one("#message_log", Log)
+        mode = "Advanced" if self.advanced_fleet_mode else "Basic"
+        message_log.write_line(f"Switched to {mode} fleet management mode.")
 
     def _focus_fleet_index(self, index: int) -> None:
         """Focus and highlight a fleet by index."""
@@ -525,7 +558,8 @@ class PyAurora4XApp(App):
         """Switch between different main views."""
         # Hide all views
         self.query_one("#system_view").add_class("hidden")
-        self.query_one("#fleet_view").add_class("hidden") 
+        self.query_one("#fleet_view").add_class("hidden")
+        self.query_one("#fleet_command_view").add_class("hidden")
         self.query_one("#research_view").add_class("hidden")
         self.query_one("#design_view").add_class("hidden")
         self.query_one("#colony_view").add_class("hidden")
@@ -534,7 +568,10 @@ class PyAurora4XApp(App):
         if view_name == "systems":
             self.query_one("#system_view").remove_class("hidden")
         elif view_name == "fleets":
-            self.query_one("#fleet_view").remove_class("hidden")
+            if self.advanced_fleet_mode:
+                self.query_one("#fleet_command_view").remove_class("hidden")
+            else:
+                self.query_one("#fleet_view").remove_class("hidden")
         elif view_name == "research":
             self.query_one("#research_view").remove_class("hidden")
         elif view_name == "ship_design":
@@ -561,6 +598,8 @@ class PyAurora4XApp(App):
         message_log.write_line("  3 - Show research")
         message_log.write_line("  4 - Show ship design")
         message_log.write_line("  5 - Show colonies")
+        message_log.write_line("  6 - Show fleet command")
+        message_log.write_line("  f - Toggle fleet view (basic/advanced)")
         message_log.write_line("  F1-F5 - Focus fleets 1-5")
         message_log.write_line("  h - Show this help")
     
@@ -589,6 +628,10 @@ class PyAurora4XApp(App):
             self.action_show_ship_design()
         elif key == "5":
             self.action_show_colonies()
+        elif key == "6":
+            self.action_show_fleet_command()
+        elif key == "f":
+            self.action_toggle_fleet_view()
         elif key == "q":
             self.action_quit()
         elif key == "s":

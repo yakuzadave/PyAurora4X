@@ -9,6 +9,7 @@ A Python-based 4X space strategy game with realistic orbital mechanics, terminal
 - **Modular Architecture**: Extensible design with separate engine, UI, data, and core modules
 - **4X Gameplay**: Explore, Expand, Exploit, and Exterminate across star systems
 - **Research System**: Technology tree with prerequisites and unlocks
+- **Advanced Fleet Command**: Comprehensive tactical fleet management with formations, orders, and AI-controlled behavior
 - **Fleet Management**: Design ships, manage fleets, and conduct space operations
 - **Save/Load System**: Persistent game states with TinyDB and JSON support
 - **Colony Management**: Colonies grow and produce resources over time
@@ -141,6 +142,7 @@ contribute new documents.
 - [docs/jump_points.md](docs/jump_points.md) – Details on jump point mechanics and FTL travel.
 - [docs/colony_management.md](docs/colony_management.md) – Overview of colony growth and resource production.
 - [docs/fleet_combat.md](docs/fleet_combat.md) – Overview of combat and command features.
+- [FLEET_COMMAND_IMPLEMENTATION.md](FLEET_COMMAND_IMPLEMENTATION.md) – Advanced Fleet Command System implementation details.
 
 
 ## License
