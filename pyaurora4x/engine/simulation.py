@@ -33,6 +33,7 @@ from pyaurora4x.engine.turn_manager import GameTurnManager
 from pyaurora4x.engine.infrastructure_manager import ColonyInfrastructureManager
 from pyaurora4x.engine.jump_point_manager import JumpPointManager
 from pyaurora4x.engine.victory_manager import VictoryManager
+from pyaurora4x.engine.shipyard_manager import ShipyardManager
 
 from pyaurora4x.data.tech_tree import TechTreeManager
 
@@ -70,6 +71,7 @@ class GameSimulation:
         self.infrastructure_manager = ColonyInfrastructureManager()
         self.jump_point_manager = JumpPointManager()
         self.victory_manager = VictoryManager(event_manager=self.event_manager)
+        self.shipyard_manager = ShipyardManager()
         
         # Game state
         self.is_running = False
@@ -116,6 +118,9 @@ class GameSimulation:
         
         # Initialize orbital mechanics for all systems
         self._initialize_orbital_mechanics()
+        
+        # Initialize shipyards for all empires
+        self._initialize_empire_shipyards()
         
         # Initialize victory tracking
         self._initialize_victory_tracking()
@@ -293,6 +298,12 @@ class GameSimulation:
         # Jump point operations
         self._process_jump_point_operations(delta_seconds)
         
+        # Industry: update shipyard throughput and advance queues daily
+        if int(self.current_time // 86400) != int(old_time // 86400):
+            self._update_shipyard_throughput()
+            days = (self.current_time - old_time) / 86400.0
+            self.shipyard_manager.tick(days=days, now=self.current_time, event_manager=self.event_manager)
+
         # Check victory conditions (every 10 seconds of game time to avoid excessive checking)
         if int(self.current_time) % 10 == 0 and int(old_time) % 10 != 0:
             self.check_victory_conditions()
@@ -779,6 +790,7 @@ class GameSimulation:
             "star_systems": {id: system.model_dump() for id, system in self.star_systems.items()},
             "fleets": {id: fleet.model_dump() for id, fleet in self.fleets.items()},
             "colonies": {id: colony.model_dump() for id, colony in self.colonies.items()},
+            "shipyards": {id: yard.model_dump() for id, yard in self.shipyard_manager.yards.items()},
         }
     
     def load_game_state(self, state: Dict[str, Any]) -> None:
@@ -806,6 +818,12 @@ class GameSimulation:
         self.colonies.clear()
         for colony_id, colony_data in state.get("colonies", {}).items():
             self.colonies[colony_id] = Colony(**colony_data)
+
+        # Load shipyards
+        self.shipyard_manager = ShipyardManager()
+        for yard_id, yard_data in state.get("shipyards", {}).items():
+            from pyaurora4x.core.shipyards import Shipyard
+            self.shipyard_manager.yards[yard_id] = Shipyard(**yard_data)
 
         # Restore colony links
         for colony in self.colonies.values():
@@ -846,6 +864,101 @@ class GameSimulation:
         )
         
         logger.info("Victory tracking initialized for %d empires", len(empires))
+    
+    def _initialize_empire_shipyards(self) -> None:
+        """Create initial shipyards for all empires."""
+        from pyaurora4x.core.shipyards import Shipyard, Slipway, YardType
+        
+        for empire in self.empires.values():
+            # Create a basic commercial shipyard for each empire
+            yard = Shipyard(
+                id=f"{empire.id}_starter_yard",
+                empire_id=empire.id,
+                name=f"{empire.name} Starter Shipyard",
+                yard_type=YardType.COMMERCIAL,
+                bp_per_day=50.0,  # Basic throughput
+                tooling_bonus=1.0,
+                slipways=[
+                    Slipway(id=f"{empire.id}_slip_1", max_hull_tonnage=5000),
+                    Slipway(id=f"{empire.id}_slip_2", max_hull_tonnage=5000) if empire.is_player else Slipway(id=f"{empire.id}_slip_1_ai", max_hull_tonnage=3000),
+                ]
+            )
+            
+            self.shipyard_manager.add_yard(yard)
+            logger.info("Created starter shipyard for %s with %d slipways", empire.name, len(yard.slipways))
+    
+    def _update_shipyard_throughput(self) -> None:
+        """Update build points per day for all shipyards based on available industry."""
+        for yard in self.shipyard_manager.yards.values():
+            empire = self.empires.get(yard.empire_id)
+            if not empire:
+                continue
+            
+            # Calculate base throughput from factories and infrastructure
+            base_bp = self._calculate_empire_industrial_capacity(empire)
+            
+            # Apply technology bonuses
+            tech_multiplier = self._calculate_construction_tech_bonus(empire)
+            
+            # Distribute capacity among empire's yards (simple equal split for now)
+            empire_yards = [y for y in self.shipyard_manager.yards.values() if y.empire_id == empire.id]
+            yard_share = base_bp / max(1, len(empire_yards))
+            
+            # Update the yard's base throughput
+            yard.bp_per_day = yard_share * tech_multiplier
+    
+    def _calculate_empire_industrial_capacity(self, empire: Empire) -> float:
+        """Calculate an empire's total industrial capacity for shipbuilding."""
+        total_capacity = 0.0
+        
+        # Base capacity from colonies
+        for colony_id in empire.colonies:
+            colony = self.colonies.get(colony_id)
+            if not colony:
+                continue
+            
+            # Get infrastructure state if available
+            if hasattr(self, 'infrastructure_manager'):
+                state = self.infrastructure_manager.get_colony_state(colony_id)
+                if state:
+                    # Count construction-related buildings
+                    factory_count = 0
+                    for building_id, building in state.buildings.items():
+                        template = self.infrastructure_manager.building_templates.get(building.template_id)
+                        if template and 'factory' in template.id.lower():
+                            factory_count += 1
+                    
+                    # Each factory contributes to shipyard capacity
+                    total_capacity += factory_count * 10.0
+            
+            # Fallback: use legacy infrastructure
+            if colony.infrastructure:
+                factory_count = colony.infrastructure.get('factory', 0)
+                total_capacity += factory_count * 10.0
+            
+            # Base colony contribution (minimum capacity)
+            total_capacity += 20.0  # Each colony provides some basic capacity
+        
+        return max(50.0, total_capacity)  # Minimum capacity for any empire
+    
+    def _calculate_construction_tech_bonus(self, empire: Empire) -> float:
+        """Calculate technology bonus multiplier for construction."""
+        multiplier = 1.0
+        
+        # Check for construction-related technologies
+        construction_techs = [
+            'automated_construction',
+            'nano_construction', 
+            'orbital_shipyards',
+            'advanced_materials'
+        ]
+        
+        for tech_id in construction_techs:
+            tech = empire.technologies.get(tech_id)
+            if tech and tech.is_researched:
+                multiplier += 0.15  # 15% bonus per relevant tech
+        
+        return multiplier
     
     def check_victory_conditions(self) -> bool:
         """Check victory conditions and handle game end if needed."""

@@ -216,8 +216,8 @@ class SaveManager:
             # Get the most recent save if multiple exist
             save_data = save_records[-1]
 
-            logger.info(f"Game loaded from TinyDB: {save_name}")
-            return save_data["game_state"]
+        logger.info(f"Game loaded from TinyDB: {save_name}")
+        return self._migrate_save_data(save_data["game_state"])
 
     def _load_with_duckdb(self, save_name: str) -> Dict[str, Any]:
         """Load using DuckDB."""
@@ -234,7 +234,7 @@ class SaveManager:
         if not row:
             raise FileNotFoundError(f"Save '{save_name}' not found in database")
         logger.info(f"Game loaded from DuckDB: {save_name}")
-        return json.loads(row[0])
+        return self._migrate_save_data(json.loads(row[0]))
 
     def _load_with_json(self, save_identifier: str) -> Dict[str, Any]:
         """Load using JSON files."""
@@ -256,9 +256,12 @@ class SaveManager:
 
             # Handle both new format (with metadata) and old format (direct game state)
             if "game_state" in save_data:
-                return save_data["game_state"]
+                game_state = save_data["game_state"]
             else:
-                return save_data
+                game_state = save_data
+            
+            # Apply migrations if needed
+            return self._migrate_save_data(game_state)
 
         except Exception as e:
             logger.error(f"Error loading from JSON: {e}")
@@ -601,3 +604,25 @@ class SaveManager:
                 return save_metadata
 
         raise FileNotFoundError(f"Save not found: {save_identifier}")
+
+    def _migrate_save_data(self, game_state: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply migrations to save data for backward compatibility."""
+        # Check save format version
+        version = game_state.get("save_format_version", "legacy")
+        
+        # Migration 1: Add shipyards if missing (for saves before shipyard system)
+        if "shipyards" not in game_state:
+            logger.info("Migrating save: adding shipyards section")
+            game_state["shipyards"] = {}
+            
+            # Note: Initial shipyards will be created by simulation._initialize_empire_shipyards()
+            # when the game loads, so we don't need to create them here
+        
+        # Migration 2: Update save format version
+        if version == "legacy":
+            game_state["save_format_version"] = "1.1"  # Mark as migrated
+            logger.info("Migrated save from legacy format to v1.1")
+        
+        # Future migrations can be added here with version checks
+        
+        return game_state

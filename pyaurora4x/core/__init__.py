@@ -27,6 +27,7 @@ from pyaurora4x.core.enums import (
 )
 from pyaurora4x.core.events import EventManager, GameEvent
 from pyaurora4x.core.utils import distance_3d, angle_between_vectors
+from pyaurora4x.core.shipyards import YardType, Slipway, BuildOrder, RefitOrder, Shipyard
 
 __all__ = [
     "Empire",
@@ -50,4 +51,9 @@ __all__ = [
     "GameEvent",
     "distance_3d",
     "angle_between_vectors",
+    "YardType",
+    "Slipway",
+    "BuildOrder",
+    "RefitOrder",
+    "Shipyard",
 ]

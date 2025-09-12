@@ -9,10 +9,8 @@ __version__ = "0.1.0"
 __author__ = "PyAurora4X Development Team"
 __description__ = "Terminal-based 4X space strategy game with realistic orbital mechanics"
 
-# Package-level imports for convenience
+# Minimal package-level exports to avoid heavy import side effects
 from pyaurora4x.core.models import Empire, Fleet, Ship, Colony, StarSystem, Planet
-from pyaurora4x.engine.simulation import GameSimulation
-from pyaurora4x.ui.main_app import PyAurora4XApp
 
 __all__ = [
     "__version__",
@@ -22,6 +20,4 @@ __all__ = [
     "Colony",
     "StarSystem",
     "Planet",
-    "GameSimulation",
-    "PyAurora4XApp",
 ]
