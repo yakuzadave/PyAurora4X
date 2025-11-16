@@ -661,32 +661,54 @@ class PyAurora4XApp(App):
         """Switch between different main views."""
         if self.current_layout != "dashboard":
             self._switch_layout("dashboard")
+            self.call_after_refresh(lambda: self._apply_dashboard_view(view_name))
+            return
 
-        # Hide all views
-        self.query_one("#system_view").add_class("hidden")
-        self.query_one("#fleet_view").add_class("hidden")
-        self.query_one("#fleet_command_view").add_class("hidden")
-        self.query_one("#research_view").add_class("hidden")
-        self.query_one("#design_view").add_class("hidden")
-        self.query_one("#colony_view").add_class("hidden")
+        self._apply_dashboard_view(view_name)
 
-        # Show selected view
+    def _apply_dashboard_view(self, view_name: str, retry: bool = False) -> None:
+        """Hide/show dashboard widgets once they are available."""
+
+        selectors = [
+            "#system_view",
+            "#fleet_view",
+            "#fleet_command_view",
+            "#research_view",
+            "#design_view",
+            "#colony_view",
+        ]
+
+        try:
+            widgets = {selector: self.query_one(selector) for selector in selectors}
+        except NoMatches:
+            if retry:
+                logger.warning(
+                    "Dashboard widgets not ready when switching to %s view", view_name
+                )
+                return
+
+            self.call_after_refresh(lambda: self._apply_dashboard_view(view_name, True))
+            return
+
+        for widget in widgets.values():
+            widget.add_class("hidden")
+
         if view_name == "systems":
-            self.query_one("#system_view").remove_class("hidden")
+            widgets["#system_view"].remove_class("hidden")
         elif view_name == "fleets":
             if self.advanced_fleet_mode:
-                self.query_one("#fleet_command_view").remove_class("hidden")
+                widgets["#fleet_command_view"].remove_class("hidden")
             else:
-                self.query_one("#fleet_view").remove_class("hidden")
+                widgets["#fleet_view"].remove_class("hidden")
         elif view_name == "research":
-            self.query_one("#research_view").remove_class("hidden")
+            widgets["#research_view"].remove_class("hidden")
         elif view_name == "ship_design":
-            self.query_one("#design_view").remove_class("hidden")
+            widgets["#design_view"].remove_class("hidden")
         elif view_name == "colonies":
-            self.query_one("#colony_view").remove_class("hidden")
-        
+            widgets["#colony_view"].remove_class("hidden")
+
         self.current_view = view_name
-        
+
         message_log = self.query_one("#message_log", Log)
         message_log.write_line(f"Switched to {view_name} view.")
 
