@@ -29,6 +29,7 @@ class EventCategory(Enum):
     COMBAT = "combat"
     EXPLORATION = "exploration"
     ECONOMY = "economy"
+    INDUSTRY = "industry"
     NOTIFICATION = "notification"
     VICTORY = "victory"
     ACHIEVEMENT = "achievement"

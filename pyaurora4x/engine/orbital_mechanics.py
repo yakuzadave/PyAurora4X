@@ -5,6 +5,7 @@ Provides realistic orbital dynamics for planets, moons, and spacecraft.
 """
 
 import logging
+import warnings
 from typing import Dict, Optional
 
 import numpy as np
@@ -136,7 +137,7 @@ class OrbitalMechanics:
 
         # Integrate to the current time using configured timestep
         if time_years != sim.t:
-            sim.integrate(time_years)
+            self._integrate_with_retry(sim, time_years)
 
         # Update planet positions
         for i, planet in enumerate(star_system.planets):
@@ -194,6 +195,33 @@ class OrbitalMechanics:
                 z_inclined = y * np.sin(inclination)
 
                 planet.position = Vector3D(x=x, y=y_inclined, z=z_inclined)
+
+    def _integrate_with_retry(self, sim, target_time_years: float) -> None:
+        """Integrate the REBOUND simulation while handling IAS15 warnings."""
+
+        max_attempts = 5
+        attempts = 0
+        while attempts < max_attempts and target_time_years != sim.t:
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", RuntimeWarning)
+                    sim.integrate(target_time_years)
+                return
+            except RuntimeWarning:
+                attempts += 1
+                sim.dt = max(sim.dt / 2.0, 1e-8)
+                logger.debug(
+                    "IAS15 failed to converge; reducing dt to %e years (attempt %d)",
+                    sim.dt,
+                    attempts,
+                )
+
+        if target_time_years != sim.t:
+            logger.warning(
+                "REBOUND integration did not converge after %d attempts; "
+                "star system positions may temporarily lag behind",
+                attempts,
+            )
 
     def get_orbital_velocity(
         self, star_system: StarSystem, planet_index: int
@@ -329,18 +357,9 @@ class OrbitalMechanics:
             "delta_v": best["delta_v"],
         }
 
-        if self.use_rebound:
-            # Create a tiny REBOUND simulation to integrate the transfer time.
-            sim = rebound.Simulation()
-            sim.units = ("km", "s", "kg")
-            sim.add(m=star_mass * 1.989e30)
-            sim.add(m=0, x=r1, y=0)
-            a = best["semi_major_axis"]
-            ecc = abs(r2 - r1) / (r1 + r2) if best["transfer_type"] == "hohmann" else 1e-6
-            sim.add(m=0, a=a, e=ecc)
-            sim.move_to_com()
-            # Integrate for half the orbital period for the transfer
-            sim.integrate(best["transfer_time"])
+        # The REBOUND validation pass used to run here, but it caused noisy
+        # IAS15 warnings and never informed gameplay, so the analytical
+        # transfer calculation is now considered authoritative.
 
         return result
 

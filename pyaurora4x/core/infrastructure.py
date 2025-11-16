@@ -89,6 +89,7 @@ class ConstructionProject(BaseModel):
     # Construction details
     total_cost: Dict[str, float] = Field(default_factory=dict)
     construction_time: float = 86400.0
+    initial_resources_reserved: bool = False
 
 
 class ResourceProductionChain(BaseModel):

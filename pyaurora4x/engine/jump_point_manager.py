@@ -477,6 +477,8 @@ class JumpPointManager:
     
     def _add_secondary_connections(self, systems: List[StarSystem], connectivity_level: float) -> None:
         """Add secondary jump point connections for better network connectivity."""
+        if len(systems) < 2:
+            return
         total_possible = len(systems) * (len(systems) - 1) // 2
         target_connections = int(total_possible * connectivity_level)
         current_connections = sum(len(s.jump_points) for s in systems) // 2
@@ -485,7 +487,10 @@ class JumpPointManager:
         
         for _ in range(additional_needed):
             # Pick two random systems that aren't already connected
-            sys1, sys2 = random.sample(systems, 2)
+            try:
+                sys1, sys2 = random.sample(systems, 2)
+            except ValueError:
+                break  # Not enough systems to sample
             
             # Check if they're already connected
             already_connected = any(jp.connects_to == sys2.id for jp in sys1.jump_points)
@@ -501,10 +506,15 @@ class JumpPointManager:
     
     def _add_special_jump_points(self, systems: List[StarSystem]) -> None:
         """Add special jump points (unstable, dormant, etc.) to some systems."""
+        if len(systems) < 2:
+            return
         for system in systems:
             # 20% chance for an unstable jump point
             if random.random() < 0.2:
-                target_system = random.choice([s for s in systems if s != system])
+                candidates = [s for s in systems if s != system]
+                if not candidates:
+                    continue
+                target_system = random.choice(candidates)
                 jump_point = self._create_jump_point(
                     system, target_system,
                     jump_type=JumpPointType.UNSTABLE,
@@ -514,7 +524,10 @@ class JumpPointManager:
             
             # 10% chance for a dormant jump point (initially inactive)
             if random.random() < 0.1:
-                target_system = random.choice([s for s in systems if s != system])
+                candidates = [s for s in systems if s != system]
+                if not candidates:
+                    continue
+                target_system = random.choice(candidates)
                 jump_point = self._create_jump_point(
                     system, target_system,
                     jump_type=JumpPointType.DORMANT,

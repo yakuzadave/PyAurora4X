@@ -9,6 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical, ScrollableContainer
 from textual.widgets import Static, Button, DataTable, Label, Input, Select
 from textual.reactive import reactive
+from textual.css.query import NoMatches
 import logging
 
 from pyaurora4x.core.shipyards import Shipyard, BuildOrder, RefitOrder, YardType
@@ -97,7 +98,10 @@ class ShipyardPanel(Static):
             yard_id: yard for yard_id, yard in self.simulation.shipyard_manager.yards.items()
             if yard.empire_id == self.current_empire_id
         }
-        
+
+        if not self._ui_ready():
+            return
+
         self._update_shipyards_table()
         self.refresh_yard_details()
 
@@ -127,6 +131,9 @@ class ShipyardPanel(Static):
         if not self.current_yard_id or self.current_yard_id not in self.yards:
             self._clear_yard_details()
             return
+
+        if not self._ui_ready():
+            return
             
         yard = self.yards[self.current_yard_id]
         
@@ -148,6 +155,9 @@ class ShipyardPanel(Static):
 
     def _clear_yard_details(self) -> None:
         """Clear yard details when no yard selected."""
+        if not self._ui_ready():
+            return
+
         self.query_one("#yard-info", Static).update("No yard selected")
         self.query_one("#yard-title", Label).update("Yard Details")
         
@@ -303,3 +313,13 @@ class ShipyardPanel(Static):
             "total_orders": total_queue,
             "total_bp_per_day": sum(yard.effective_bp_per_day() for yard in empire_yards)
         }
+
+    def _ui_ready(self) -> bool:
+        """Check whether the panel's widgets are available."""
+        try:
+            self.query_one("#shipyards-table", DataTable)
+            self.query_one("#slipways-table", DataTable)
+            self.query_one("#queue-table", DataTable)
+            return True
+        except NoMatches:
+            return False
