@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any
 from enum import Enum
 from pydantic import BaseModel, Field
+import uuid
 
 class YardType(str, Enum):
     NAVAL = "naval"
@@ -43,7 +44,7 @@ class BuildOrder(BaseModel):
         return min(100.0, (self.progress_bp / self.total_bp) * 100.0)
 
 class RefitOrder(BaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     ship_id: str  # Ship being refitted
     from_design_id: str
     to_design_id: str
@@ -99,7 +100,7 @@ class Shipyard(BaseModel):
             "new_bonus": new_bonus,
             "cost_bp": tooling_cost,
             "time_days": tooling_cost / max(1, self.bp_per_day),
-            "efficiency_gain": (new_bonus - current_bonus) / current_bonus * 100
+            "efficiency_gain": round((new_bonus - current_bonus) / current_bonus * 100, 4)
         }
     
     def add_slipway(self, max_tonnage: int = 10000) -> Dict[str, Any]:

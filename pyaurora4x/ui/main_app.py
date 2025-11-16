@@ -10,10 +10,11 @@ import logging
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import (
-    Header, Footer, Button, Static, Log, Label
+    Header, Footer, Button, Static, Log, Label, ContentSwitcher
 )
 from textual.binding import Binding
 from textual import events
+from textual.css.query import NoMatches
 
 from pyaurora4x.engine.simulation import GameSimulation
 from pyaurora4x.ui.widgets.star_system_view import StarSystemView
@@ -124,27 +125,59 @@ class PyAurora4XApp(App):
         border: solid $primary;
         margin: 1;
     }
-    
+
     .hidden {
         display: none;
     }
-    
+
+    .layout {
+        height: 100%;
+    }
+
     #main_container {
         height: 100%;
     }
-    
-    #top_row {
+
+    #layout_switcher {
         height: 80%;
     }
-    
-    #main_view {
+
+    #dashboard_top_row {
+        height: 100%;
+    }
+
+    #dashboard_main_view {
         width: 70%;
     }
-    
-    #side_panel {
+
+    #dashboard_side_panel {
         width: 30%;
     }
-    
+
+    #operations_main_column {
+        height: 100%;
+        padding: 1;
+    }
+
+    #operations_top_row,
+    #operations_bottom_row,
+    #operations_status_row {
+        height: 1fr;
+        margin-bottom: 1;
+    }
+
+    #operations_research_column {
+        width: 40%;
+    }
+
+    #operations_star_view {
+        width: 60%;
+    }
+
+    #operations_status_row .panel {
+        width: 1fr;
+    }
+
     #bottom_panel {
         height: 20%;
     }
@@ -253,6 +286,9 @@ class PyAurora4XApp(App):
         Binding("4", "show_ship_design", "Ship Design"),
         Binding("5", "show_colonies", "Colonies"),
         Binding("6", "show_fleet_command", "Fleet Command"),
+        Binding("d", "show_dashboard_layout", "Dashboard Layout"),
+        Binding("o", "show_operations_layout", "Operations Layout"),
+        Binding("v", "next_layout", "Toggle Layout"),
         Binding("f", "toggle_fleet_view", "Fleet View Toggle"),
         Binding("f1", "focus_fleet_1", "Fleet 1"),
         Binding("f2", "focus_fleet_2", "Fleet 2"),
@@ -269,6 +305,7 @@ class PyAurora4XApp(App):
         self.component_manager = ShipComponentManager()
         self.fleet_command_manager = FleetCommandManager()
         self.current_view = "systems"
+        self.current_layout = "dashboard"
         self.advanced_fleet_mode = False  # Toggle between basic and advanced fleet management
         self.auto_save_interval = 300  # 5 minutes
         self.last_auto_save = 0
@@ -280,27 +317,64 @@ class PyAurora4XApp(App):
     def compose(self) -> ComposeResult:
         """Compose the main application layout."""
         yield Header(show_clock=True)
-        
+
         with Container(id="main_container"):
-            with Horizontal(id="top_row"):
-                # Left panel - main view area
-                with Vertical(id="main_view", classes="panel"):
-                    yield StarSystemView(id="system_view")
-                    yield FleetPanel(id="fleet_view", classes="hidden")
-                    yield FleetCommandPanel(self.fleet_command_manager, id="fleet_command_view", classes="hidden")
-                    yield ResearchPanel(id="research_view", classes="hidden")
-                    yield ShipDesignPanel(self.component_manager, id="design_view", classes="hidden")
-                    yield ColonyManagementPanel(id="colony_view", classes="hidden")
-                
-                # Right panel - empire stats and controls  
-                with Vertical(id="side_panel", classes="panel"):
-                    yield EmpireStatsWidget(id="empire_stats")
-                    yield TimeControlWidget(id="time_controls")
-            
+            with ContentSwitcher(initial="dashboard_layout", id="layout_switcher"):
+                with Container(id="dashboard_layout", classes="layout"):
+                    with Horizontal(id="dashboard_top_row"):
+                        # Left panel - main view area
+                        with Vertical(id="dashboard_main_view", classes="panel"):
+                            yield StarSystemView(id="system_view")
+                            yield FleetPanel(id="fleet_view", classes="hidden")
+                            yield FleetCommandPanel(
+                                self.fleet_command_manager,
+                                id="fleet_command_view",
+                                classes="hidden",
+                            )
+                            yield ResearchPanel(id="research_view", classes="hidden")
+                            yield ShipDesignPanel(
+                                self.component_manager,
+                                id="design_view",
+                                classes="hidden",
+                            )
+                            yield ColonyManagementPanel(id="colony_view", classes="hidden")
+
+                        # Right panel - empire stats and controls
+                        with Vertical(id="dashboard_side_panel", classes="panel"):
+                            yield EmpireStatsWidget(id="empire_stats")
+                            yield TimeControlWidget(id="time_controls")
+
+                with Container(id="operations_layout", classes="layout"):
+                    with Vertical(id="operations_main_column"):
+                        with Horizontal(id="operations_top_row"):
+                            with Vertical(id="operations_star_view", classes="panel"):
+                                yield StarSystemView(id="system_view_operations")
+                            with Vertical(id="operations_research_column", classes="panel"):
+                                yield ResearchPanel(id="research_view_operations")
+                                yield ShipDesignPanel(
+                                    self.component_manager,
+                                    id="design_view_operations",
+                                )
+
+                        with Horizontal(id="operations_bottom_row"):
+                            with Vertical(classes="panel"):
+                                yield FleetCommandPanel(
+                                    self.fleet_command_manager,
+                                    id="fleet_command_view_operations",
+                                )
+                            with Vertical(classes="panel"):
+                                yield ColonyManagementPanel(id="colony_view_operations")
+
+                        with Horizontal(id="operations_status_row"):
+                            with Vertical(classes="panel"):
+                                yield EmpireStatsWidget(id="empire_stats_operations")
+                            with Vertical(classes="panel"):
+                                yield TimeControlWidget(id="time_controls_operations")
+
             # Bottom panel - messages and logs
             with Container(id="bottom_panel", classes="panel"):
                 yield Log(id="message_log", max_lines=100)
-        
+
         yield Footer()
     
     def on_mount(self) -> None:
@@ -355,14 +429,20 @@ class PyAurora4XApp(App):
         """Update all widgets with current game state."""
         if not self.simulation:
             return
-        
+
         # Update system view
-        system_view = self.query_one("#system_view", StarSystemView)
-        if self.simulation.star_systems:
+        system_views = list(self.query(StarSystemView))
+        if self.simulation.star_systems and system_views:
             first_system = list(self.simulation.star_systems.values())[0]
-            system_fleets = [f for f in self.simulation.fleets.values() if f.system_id == first_system.id]
-            system_view.update_system(first_system, system_fleets)
-        system_view.refresh_positions()
+            system_fleets = [
+                f for f in self.simulation.fleets.values() if f.system_id == first_system.id
+            ]
+            for view in system_views:
+                view.update_system(first_system, system_fleets)
+                view.refresh_positions()
+        else:
+            for view in system_views:
+                view.refresh_positions()
         
         # Update fleet panel
         fleet_panel = self.query_one("#fleet_view", FleetPanel)
@@ -372,59 +452,60 @@ class PyAurora4XApp(App):
             fleet_panel.update_fleets(fleets, self.simulation.current_time)
         fleet_panel.refresh()
         
-        # Update fleet command panel
-        fleet_command_panel = self.query_one("#fleet_command_view", FleetCommandPanel)
-        if player_empire:
-            fleets = [self.simulation.get_fleet(fid) for fid in player_empire.fleets if self.simulation.get_fleet(fid) is not None]
-            # Initialize fleet command manager with event manager if available
-            if hasattr(self.simulation, 'event_manager') and not fleet_command_panel.event_manager:
-                fleet_command_panel.event_manager = self.simulation.event_manager
-            fleet_command_panel.update_fleets(fleets, player_empire)
-        fleet_command_panel.refresh()
+        # Update fleet command panels (dashboard + operations layout)
+        for fleet_command_panel in self.query(FleetCommandPanel):
+            if player_empire:
+                fleets = [
+                    self.simulation.get_fleet(fid)
+                    for fid in player_empire.fleets
+                    if self.simulation.get_fleet(fid) is not None
+                ]
+                if hasattr(self.simulation, "event_manager") and not fleet_command_panel.event_manager:
+                    fleet_command_panel.event_manager = self.simulation.event_manager
+                fleet_command_panel.update_fleets(fleets, player_empire)
+            fleet_command_panel.refresh()
         
-        # Update research panel
-        research_panel = self.query_one("#research_view", ResearchPanel)
-        if player_empire:
-            research_panel.tech_manager = self.simulation.tech_manager
-            research_panel.update_empire(player_empire)
-        research_panel.refresh()
-        
-        # Update ship design panel
-        design_panel = self.query_one("#design_view", ShipDesignPanel)
-        if player_empire:
-            design_panel.set_empire(player_empire)
-        design_panel.refresh()
-        
-        # Update colony management panel
-        colony_panel = self.query_one("#colony_view", ColonyManagementPanel)
-        if player_empire and player_empire.colonies:
-            # Initialize the panel with infrastructure manager and event manager
-            if not colony_panel.infrastructure_manager:
-                colony_panel.infrastructure_manager = self.simulation.get_infrastructure_manager()
-            if not colony_panel.event_manager:
-                colony_panel.event_manager = self.simulation.event_manager
-            
-            # Update with first colony as default
-            first_colony_id = player_empire.colonies[0]
-            first_colony = self.simulation.get_colony(first_colony_id)
-            if first_colony:
-                colony_panel.update_colony(first_colony, player_empire)
-        colony_panel.refresh()
-        
-        # Update empire stats
-        empire_stats = self.query_one("#empire_stats", EmpireStatsWidget)
-        if player_empire:
-            empire_stats.event_manager = self.simulation.event_manager
-            empire_stats.update_empire(
-                player_empire, self.simulation.current_time
+        # Update research panels
+        for research_panel in self.query(ResearchPanel):
+            if player_empire:
+                research_panel.tech_manager = self.simulation.tech_manager
+                research_panel.update_empire(player_empire)
+            research_panel.refresh()
+
+        # Update ship design panels
+        for design_panel in self.query(ShipDesignPanel):
+            if player_empire:
+                design_panel.set_empire(player_empire)
+            design_panel.refresh()
+
+        # Update colony management panels
+        for colony_panel in self.query(ColonyManagementPanel):
+            if player_empire and player_empire.colonies:
+                if not colony_panel.infrastructure_manager:
+                    colony_panel.infrastructure_manager = self.simulation.get_infrastructure_manager()
+                if not colony_panel.event_manager:
+                    colony_panel.event_manager = self.simulation.event_manager
+
+                first_colony_id = player_empire.colonies[0]
+                first_colony = self.simulation.get_colony(first_colony_id)
+                if first_colony:
+                    colony_panel.update_colony(first_colony, player_empire)
+            colony_panel.refresh()
+
+        # Update empire stats widgets
+        for empire_stats in self.query(EmpireStatsWidget):
+            if player_empire:
+                empire_stats.event_manager = self.simulation.event_manager
+                empire_stats.update_empire(
+                    player_empire, self.simulation.current_time
+                )
+
+        # Update time controls across layouts
+        for time_controls in self.query(TimeControlWidget):
+            time_controls.update_status(
+                self.simulation.current_time,
+                self.simulation.is_paused
             )
-        
-        # Update time controls
-        time_controls = self.query_one("#time_controls", TimeControlWidget)
-        time_controls.update_status(
-            self.simulation.current_time,
-            self.simulation.is_paused
-        )
 
     def _on_tick(self) -> None:
         """Periodic refresh callback."""
@@ -443,7 +524,7 @@ class PyAurora4XApp(App):
         """Handle time control events."""
         if not self.simulation:
             return
-        
+
         message_log = self.query_one("#message_log", Log)
         
         if event.action == "pause":
@@ -456,12 +537,21 @@ class PyAurora4XApp(App):
             self.simulation.advance_time(event.value)
             message_log.write_line(f"Advanced time by {event.value} seconds.")
             self._update_all_widgets()
-    
+
+    def _get_active_time_controls(self) -> Optional[TimeControlWidget]:
+        """Return the time control widget for the current layout."""
+        selector = "#time_controls" if self.current_layout == "dashboard" else "#time_controls_operations"
+        try:
+            return self.query_one(selector, TimeControlWidget)
+        except NoMatches:
+            return None
+
     def action_toggle_pause(self) -> None:
         """Toggle pause via keyboard shortcut."""
-        time_controls = self.query_one("#time_controls", TimeControlWidget)
-        time_controls.toggle_pause()
-    
+        time_controls = self._get_active_time_controls()
+        if time_controls:
+            time_controls.toggle_pause()
+
     def action_save_game(self) -> None:
         """Save the current game."""
         if not self.simulation:
@@ -517,12 +607,25 @@ class PyAurora4XApp(App):
     def action_show_colonies(self) -> None:
         """Show the colony management view."""
         self._switch_view("colonies")
-    
+
     def action_show_fleet_command(self) -> None:
         """Show the advanced fleet command view."""
         self.advanced_fleet_mode = True
         self._switch_view("fleets")
-    
+
+    def action_show_dashboard_layout(self) -> None:
+        """Switch to the dashboard layout."""
+        self._switch_layout("dashboard")
+
+    def action_show_operations_layout(self) -> None:
+        """Switch to the operations layout."""
+        self._switch_layout("operations")
+
+    def action_next_layout(self) -> None:
+        """Toggle between layouts."""
+        next_layout = "operations" if self.current_layout == "dashboard" else "dashboard"
+        self._switch_layout(next_layout)
+
     def action_toggle_fleet_view(self) -> None:
         """Toggle between basic and advanced fleet management views."""
         self.advanced_fleet_mode = not self.advanced_fleet_mode
@@ -556,33 +659,71 @@ class PyAurora4XApp(App):
     
     def _switch_view(self, view_name: str) -> None:
         """Switch between different main views."""
-        # Hide all views
-        self.query_one("#system_view").add_class("hidden")
-        self.query_one("#fleet_view").add_class("hidden")
-        self.query_one("#fleet_command_view").add_class("hidden")
-        self.query_one("#research_view").add_class("hidden")
-        self.query_one("#design_view").add_class("hidden")
-        self.query_one("#colony_view").add_class("hidden")
-        
-        # Show selected view
+        if self.current_layout != "dashboard":
+            self._switch_layout("dashboard")
+            self.call_after_refresh(lambda: self._apply_dashboard_view(view_name))
+            return
+
+        self._apply_dashboard_view(view_name)
+
+    def _apply_dashboard_view(self, view_name: str, retry: bool = False) -> None:
+        """Hide/show dashboard widgets once they are available."""
+
+        selectors = [
+            "#system_view",
+            "#fleet_view",
+            "#fleet_command_view",
+            "#research_view",
+            "#design_view",
+            "#colony_view",
+        ]
+
+        try:
+            widgets = {selector: self.query_one(selector) for selector in selectors}
+        except NoMatches:
+            if retry:
+                logger.warning(
+                    "Dashboard widgets not ready when switching to %s view", view_name
+                )
+                return
+
+            self.call_after_refresh(lambda: self._apply_dashboard_view(view_name, True))
+            return
+
+        for widget in widgets.values():
+            widget.add_class("hidden")
+
         if view_name == "systems":
-            self.query_one("#system_view").remove_class("hidden")
+            widgets["#system_view"].remove_class("hidden")
         elif view_name == "fleets":
             if self.advanced_fleet_mode:
-                self.query_one("#fleet_command_view").remove_class("hidden")
+                widgets["#fleet_command_view"].remove_class("hidden")
             else:
-                self.query_one("#fleet_view").remove_class("hidden")
+                widgets["#fleet_view"].remove_class("hidden")
         elif view_name == "research":
-            self.query_one("#research_view").remove_class("hidden")
+            widgets["#research_view"].remove_class("hidden")
         elif view_name == "ship_design":
-            self.query_one("#design_view").remove_class("hidden")
+            widgets["#design_view"].remove_class("hidden")
         elif view_name == "colonies":
-            self.query_one("#colony_view").remove_class("hidden")
-        
+            widgets["#colony_view"].remove_class("hidden")
+
         self.current_view = view_name
-        
+
         message_log = self.query_one("#message_log", Log)
         message_log.write_line(f"Switched to {view_name} view.")
+
+    def _switch_layout(self, layout_name: str) -> None:
+        """Switch between dashboard and operations layouts."""
+        if layout_name == self.current_layout:
+            return
+
+        layout_id = "dashboard_layout" if layout_name == "dashboard" else "operations_layout"
+        layout_switcher = self.query_one("#layout_switcher", ContentSwitcher)
+        layout_switcher.current = layout_id
+        self.current_layout = layout_name
+
+        message_log = self.query_one("#message_log", Log)
+        message_log.write_line(f"Switched to {layout_name} layout.")
     
     def action_show_help(self) -> None:
         """Show help information."""
@@ -599,6 +740,9 @@ class PyAurora4XApp(App):
         message_log.write_line("  4 - Show ship design")
         message_log.write_line("  5 - Show colonies")
         message_log.write_line("  6 - Show fleet command")
+        message_log.write_line("  d - Dashboard layout")
+        message_log.write_line("  o - Operations layout")
+        message_log.write_line("  v - Toggle layout")
         message_log.write_line("  f - Toggle fleet view (basic/advanced)")
         message_log.write_line("  F1-F5 - Focus fleets 1-5")
         message_log.write_line("  h - Show this help")
@@ -630,6 +774,12 @@ class PyAurora4XApp(App):
             self.action_show_colonies()
         elif key == "6":
             self.action_show_fleet_command()
+        elif key == "d":
+            self.action_show_dashboard_layout()
+        elif key == "o":
+            self.action_show_operations_layout()
+        elif key == "v":
+            self.action_next_layout()
         elif key == "f":
             self.action_toggle_fleet_view()
         elif key == "q":

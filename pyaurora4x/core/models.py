@@ -163,7 +163,7 @@ class Colony(BaseModel):
 
     # Population and infrastructure
     population: int = 1000
-    max_population: int = 1000  # Determined by habitats and planet habitability
+    max_population: int = 100_000  # Determined by habitats and planet habitability
     infrastructure: Dict[str, int] = Field(default_factory=dict)  # Legacy support
     
     # New infrastructure system
@@ -274,17 +274,17 @@ class JumpPoint(BaseModel):
     
     def is_accessible_by(self, empire_id: str) -> bool:
         """Check if an empire can use this jump point."""
-        if self.status in [JumpPointStatus.UNKNOWN, JumpPointStatus.DESTROYED]:
-            return False
-        
-        # Check if empire has discovered it
-        if self.survey_level == 0 and self.discovered_by != empire_id:
-            return False
-            
         # Check access permissions
         if empire_id in self.empire_access:
             return self.empire_access[empire_id]
-            
+
+        if self.status in [JumpPointStatus.UNKNOWN, JumpPointStatus.DESTROYED]:
+            return False
+
+        # Check if empire has discovered it
+        if self.survey_level == 0 and self.discovered_by != empire_id:
+            return False
+
         # Default access for discoverer
         return self.discovered_by == empire_id or self.status == JumpPointStatus.ACTIVE
     
@@ -295,10 +295,15 @@ class JumpPoint(BaseModel):
         base_cost = CONSTANTS["JUMP_FUEL_COST_BASE"]
         per_ship_cost = CONSTANTS["JUMP_FUEL_COST_PER_SHIP"] * ship_count
         mass_factor = (fleet_mass / 1000.0) ** 0.5  # Square root scaling
-        size_factor = self.size_class * 0.8  # Larger jump points are more efficient
-        
-        total_cost = (base_cost + per_ship_cost) * mass_factor * self.fuel_cost_modifier / size_factor
-        return max(10.0, total_cost)  # Minimum cost
+        efficiency = 1.0 + (self.size_class - 1) * 0.15  # Larger points more efficient
+        total_cost = (base_cost + per_ship_cost) * mass_factor * self.fuel_cost_modifier / efficiency
+
+        if self.size_class <= 2:
+            minimum_cost = max(CONSTANTS["JUMP_FUEL_COST_BASE"], 10.0)
+        else:
+            minimum_cost = 10.0
+
+        return float(max(minimum_cost, total_cost))
     
     def calculate_travel_time(self, fleet_mass: float, ship_count: int = 1) -> float:
         """Calculate travel time through this jump point."""

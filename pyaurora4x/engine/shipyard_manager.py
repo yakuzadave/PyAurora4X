@@ -89,9 +89,11 @@ class ShipyardManager(BaseModel):
                             "Order Completed: %s",
                             "Shipyard %s completed %s",
                             now,
-                            yard_id=yard.id,
-                            order_id=o.id,
-                            order_type=o.__class__.__name__,
+                            data={
+                                "yard_id": yard.id,
+                                "order_id": o.id,
+                                "order_type": o.__class__.__name__,
+                            },
                         )
         # Try to assign newly freed slipways
         self.assign_orders()

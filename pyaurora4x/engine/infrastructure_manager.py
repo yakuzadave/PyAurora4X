@@ -62,15 +62,15 @@ class ColonyInfrastructureManager:
     def get_available_buildings(self, empire: Empire) -> List[BuildingTemplate]:
         """Get buildings available for construction by an empire."""
         available = []
-        
+
         for template in self.building_templates.values():
             # Check technology requirements
             can_build = True
             for tech_req in template.tech_requirements:
-                if tech_req not in empire.technologies or not empire.technologies[tech_req].is_researched:
+                if not self._has_required_technology(empire, tech_req):
                     can_build = False
                     break
-            
+
             if can_build:
                 available.append(template)
         
@@ -84,7 +84,7 @@ class ColonyInfrastructureManager:
         
         # Check technology requirements
         for tech_req in template.tech_requirements:
-            if tech_req not in empire.technologies or not empire.technologies[tech_req].is_researched:
+            if not self._has_required_technology(empire, tech_req):
                 return False, f"Missing technology: {tech_req.value}"
         
         # Check resource requirements
@@ -137,10 +137,13 @@ class ColonyInfrastructureManager:
         
         # Sort queue by priority
         state.construction_queue.sort(
-            key=lambda pid: state.construction_projects[pid].priority, 
+            key=lambda pid: state.construction_projects[pid].priority,
             reverse=True
         )
-        
+
+        # Record whether we had enough resources at queue time to start construction
+        project.initial_resources_reserved = self._reserve_initial_resources(colony, template)
+
         logger.info("Started construction of %s in colony %s", template.name, colony.name)
         return True, f"Construction of {template.name} started"
     
@@ -170,57 +173,52 @@ class ColonyInfrastructureManager:
         if not state or not state.construction_queue:
             return
         
-        # Process the highest priority project
-        project_id = state.construction_queue[0]
-        project = state.construction_projects.get(project_id)
-        if not project:
-            return
-        
-        template = self.building_templates.get(project.building_template_id)
-        if not template:
-            return
-        
-        # Start construction if planned
-        if project.status == ConstructionStatus.PLANNED:
-            # Check if we have resources to start
-            can_start = all(
-                colony.stockpiles.get(resource, 0) >= cost * 0.1  # Need 10% up front
-                for resource, cost in template.construction_cost.items()
-            )
-            
-            if can_start:
-                project.status = ConstructionStatus.IN_PROGRESS
-                project.started_date = 0.0  # Would use current game time
-        
-        # Process ongoing construction
-        if project.status == ConstructionStatus.IN_PROGRESS:
-            # Calculate daily progress (assuming construction time is in seconds)
-            daily_progress = delta_seconds / template.construction_time
-            
-            # Check resource availability for continued construction
-            daily_resource_needed = {
-                resource: cost * daily_progress
+        remaining_time = delta_seconds
+
+        while remaining_time > 0 and state.construction_queue:
+            project_id = state.construction_queue[0]
+            project = state.construction_projects.get(project_id)
+            if not project:
+                state.construction_queue.pop(0)
+                continue
+
+            template = self.building_templates.get(project.building_template_id)
+            if not template:
+                state.construction_queue.pop(0)
+                continue
+
+            self._ensure_project_started(colony, project, template)
+
+            if project.status != ConstructionStatus.IN_PROGRESS:
+                break  # Can't proceed without resources to start
+
+            time_to_completion = (1.0 - project.progress) * template.construction_time
+            time_slice = min(remaining_time, time_to_completion)
+            progress_increment = time_slice / template.construction_time
+
+            resource_needed = {
+                resource: cost * progress_increment
                 for resource, cost in template.construction_cost.items()
             }
-            
+
             can_continue = all(
                 colony.stockpiles.get(resource, 0) >= needed
-                for resource, needed in daily_resource_needed.items()
+                for resource, needed in resource_needed.items()
             )
-            
-            if can_continue:
-                # Consume resources
-                for resource, needed in daily_resource_needed.items():
-                    colony.stockpiles[resource] = colony.stockpiles.get(resource, 0) - needed
-                    project.resources_invested[resource] = project.resources_invested.get(resource, 0) + needed
-                
-                # Update progress
-                project.progress = min(1.0, project.progress + daily_progress)
-                
-                # Complete construction
-                if project.progress >= 1.0:
-                    self._complete_construction(colony, project)
-    
+
+            if not can_continue:
+                break
+
+            for resource, needed in resource_needed.items():
+                colony.stockpiles[resource] = colony.stockpiles.get(resource, 0) - needed
+                project.resources_invested[resource] = project.resources_invested.get(resource, 0) + needed
+
+            project.progress = min(1.0, project.progress + progress_increment)
+            remaining_time -= time_slice
+
+            if project.progress >= 1.0:
+                self._complete_construction(colony, project)
+
     def _complete_construction(self, colony: Colony, project: ConstructionProject) -> None:
         """Complete a construction project."""
         template = self.building_templates.get(project.building_template_id)
@@ -255,7 +253,47 @@ class ColonyInfrastructureManager:
         self._update_colony_production(colony, state)
         
         logger.info("Completed construction of %s in colony %s", template.name, colony.name)
-    
+
+    def _ensure_project_started(
+        self, colony: Colony, project: ConstructionProject, template: BuildingTemplate
+    ) -> None:
+        """Attempt to transition a project from planned to in-progress."""
+        if project.status != ConstructionStatus.PLANNED:
+            return
+
+        if not project.initial_resources_reserved:
+            project.initial_resources_reserved = self._reserve_initial_resources(colony, template)
+
+        if project.initial_resources_reserved:
+            project.status = ConstructionStatus.IN_PROGRESS
+            project.started_date = 0.0  # Would use current game time
+
+    def _has_required_technology(self, empire: Empire, tech_req: TechnologyType) -> bool:
+        """Check whether an empire has researched a technology type."""
+        if not empire.technologies:
+            return False
+
+        for key, tech in empire.technologies.items():
+            tech_type = getattr(tech, "tech_type", None)
+            is_researched = getattr(tech, "is_researched", False)
+
+            if tech_type == tech_req and is_researched:
+                return True
+
+            if isinstance(key, str) and key.lower() == tech_req.value and is_researched:
+                return True
+
+        return False
+
+    def _reserve_initial_resources(self, colony: Colony, template: BuildingTemplate) -> bool:
+        """Determine if a colony had the minimum resources to initiate construction."""
+        if not template.construction_cost:
+            return True
+
+        return all(
+            colony.stockpiles.get(resource, 0) >= cost * 0.1
+            for resource, cost in template.construction_cost.items()
+        )
     def _create_building(self, colony_id: str, template_id: str) -> Building:
         """Create a new building instance."""
         return Building(
@@ -275,7 +313,7 @@ class ColonyInfrastructureManager:
         
         state.total_power_generation = 0.0
         state.total_power_consumption = 0.0
-        state.total_population_capacity = 1000  # Base capacity
+        state.total_population_capacity = max(colony.max_population, colony.population, 1000)
         state.total_defense_value = 0.0
         
         # Process each building
