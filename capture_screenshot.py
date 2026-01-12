@@ -16,7 +16,6 @@ Options:
 
 import sys
 import argparse
-import asyncio
 from pathlib import Path
 from datetime import datetime
 
@@ -26,14 +25,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 from pyaurora4x.ui.main_app import PyAurora4XApp
 
 
-async def capture_screenshot_async(output_path: str, wait_seconds: int = 3):
+def capture_screenshot_sync(output_path: str, wait_seconds: float = 3.0):
     """
-    Capture a screenshot of the application in SVG format.
+    Capture a screenshot of the application in SVG format using test mode.
     
     Args:
         output_path: Path where the screenshot will be saved
         wait_seconds: Seconds to wait for UI to fully render before capture
     """
+    import asyncio
+    
     print(f"Initializing PyAurora4X for screenshot capture...")
     
     # Create the application with a new game
@@ -43,52 +44,42 @@ async def capture_screenshot_async(output_path: str, wait_seconds: int = 3):
         new_game_empires=2,  # Minimal empires
     )
     
-    # Flag to track if screenshot was saved
-    screenshot_saved = False
-    screenshot_error = None
-    
-    async def take_screenshot():
-        """Internal function to take the screenshot after app is ready."""
-        nonlocal screenshot_saved, screenshot_error
+    async def run_capture():
+        """Async function to run the capture."""
         try:
-            # Wait for the application to be fully initialized and rendered
-            print(f"Waiting {wait_seconds} seconds for UI to fully render...")
-            await asyncio.sleep(wait_seconds)
-            
-            # Save the screenshot using Textual's export_svg
-            print(f"Capturing screenshot to {output_path}...")
-            svg_content = app.export_screenshot()
-            
-            # Write to file
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(svg_content)
-            
-            print(f"✓ Screenshot successfully saved to {output_path}")
-            screenshot_saved = True
-            
-            # Exit the app after capturing
-            app.exit()
-            
+            # Use run_test which works in headless environments (CI/CD)
+            # Use a larger terminal size for better screenshot quality
+            async with app.run_test(headless=True, size=(120, 40)) as pilot:
+                # Wait for the application to be fully initialized and rendered
+                print(f"Waiting {wait_seconds} seconds for UI to fully render...")
+                await pilot.pause(wait_seconds)
+                
+                # Capture the screenshot using Textual's export_screenshot
+                print(f"Capturing screenshot to {output_path}...")
+                svg_content = app.export_screenshot(title="PyAurora4X Game Interface")
+                
+                # Write to file
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(svg_content)
+                
+                print(f"✓ Screenshot successfully saved to {output_path}")
+                return True
+                
         except Exception as e:
-            screenshot_error = str(e)
-            print(f"✗ Error capturing screenshot: {e}")
-            app.exit(1)
+            print(f"✗ Error during capture: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     
-    # Schedule screenshot capture after app starts
-    app.set_timer(0.1, take_screenshot)
-    
-    # Run the application
     try:
-        app.run()
+        # Run the async capture function
+        return asyncio.run(run_capture())
+        
     except Exception as e:
-        print(f"✗ Error running application: {e}")
+        print(f"✗ Error capturing screenshot: {e}")
+        import traceback
+        traceback.print_exc()
         return False
-    
-    # Check if screenshot was successful
-    if screenshot_error:
-        raise RuntimeError(f"Screenshot capture failed: {screenshot_error}")
-    
-    return screenshot_saved
 
 
 def main():
@@ -104,9 +95,9 @@ def main():
     )
     parser.add_argument(
         "--wait",
-        type=int,
-        default=3,
-        help="Seconds to wait before capturing (default: 3)"
+        type=float,
+        default=3.0,
+        help="Seconds to wait before capturing (default: 3.0)"
     )
     
     args = parser.parse_args()
@@ -124,8 +115,8 @@ def main():
     print()
     
     try:
-        # Run the async screenshot capture
-        success = asyncio.run(capture_screenshot_async(str(output_path), args.wait))
+        # Run the screenshot capture
+        success = capture_screenshot_sync(str(output_path), args.wait)
         
         if success:
             # Verify the file was created and has content
