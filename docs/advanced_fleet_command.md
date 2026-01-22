@@ -92,7 +92,7 @@ PyAurora4X supports the following order types:
 
 Orders are processed in priority order:
 
-- **CRITICAL**: Emergency orders, process immediately
+- **EMERGENCY**: Emergency orders, process immediately
 - **HIGH**: Important tactical orders
 - **NORMAL**: Standard operations (default)
 - **LOW**: Background tasks
@@ -119,7 +119,7 @@ success, msg = manager.issue_order(
     fleet_id="fleet_1",
     order_type=OrderType.ATTACK,
     target_fleet_id="enemy_fleet_1",
-    priority=OrderPriority.CRITICAL
+    priority=OrderPriority.EMERGENCY
 )
 ```
 
@@ -160,7 +160,7 @@ manager.issue_order(
 manager.issue_order(
     fleet_id="fleet_1",
     order_type=OrderType.FORM_UP,
-    parameters={"formation_template_id": "arrow_formation"},
+    parameters={"formation_template_id": "line_ahead"},
     priority=OrderPriority.HIGH
 )
 
@@ -169,7 +169,7 @@ manager.issue_order(
     fleet_id="fleet_1",
     order_type=OrderType.ATTACK,
     target_fleet_id="enemy_fleet_1",
-    priority=OrderPriority.CRITICAL,
+    priority=OrderPriority.EMERGENCY,
     preconditions=["formation_ready"]
 )
 ```
@@ -216,7 +216,7 @@ Default formation templates:
 # Set formation
 success, msg = manager.set_fleet_formation(
     fleet_id="fleet_1",
-    formation_template_id="arrow_formation"
+    formation_template_id="line_ahead"
 )
 
 # Check formation status
@@ -340,7 +340,7 @@ if fuel_pct < 0.2:
         fleet_id="fleet_1",
         order_type=OrderType.REFUEL,
         target_planet_id="earth",
-        priority=OrderPriority.CRITICAL
+        priority=OrderPriority.EMERGENCY
     )
 elif fuel_pct < 0.5:
     # Warning: Plan refueling
@@ -392,7 +392,7 @@ from pyaurora4x.core.models import Vector3D
 manager.issue_order(
     fleet_id="attack_fleet",
     order_type=OrderType.FORM_UP,
-    parameters={"formation_template_id": "arrow_formation"},
+    parameters={"formation_template_id": "line_ahead"},
     priority=OrderPriority.HIGH
 )
 
@@ -410,7 +410,7 @@ manager.issue_order(
     fleet_id="attack_fleet",
     order_type=OrderType.ATTACK,
     target_fleet_id="enemy_defense_fleet",
-    priority=OrderPriority.CRITICAL
+    priority=OrderPriority.EMERGENCY
 )
 
 # 4. Return to base for resupply
@@ -508,7 +508,7 @@ for fleet_id in ["fleet_alpha", "fleet_beta"]:
         fleet_id=fleet_id,
         order_type=OrderType.ATTACK,
         target_fleet_id="enemy_flagship",
-        priority=OrderPriority.CRITICAL,
+        priority=OrderPriority.EMERGENCY,
         preconditions=["position_reached"]
     )
 ```
@@ -528,7 +528,7 @@ manager.issue_order(
 )
 
 # Hidden ambush fleet: Strong formation, waiting
-manager.set_fleet_formation("ambush_fleet", "arrow_formation")
+manager.set_fleet_formation("ambush_fleet", "line_ahead")
 manager.issue_order(
     fleet_id="ambush_fleet",
     order_type=OrderType.DEFEND,
@@ -546,7 +546,7 @@ Adapt to tactical situation:
 
 ```python
 # Start in arrow formation for initial attack
-manager.set_fleet_formation("fleet_1", "arrow_formation")
+manager.set_fleet_formation("fleet_1", "line_ahead")
 
 # During combat, check situation
 status = manager.get_fleet_tactical_status("fleet_1")
@@ -557,7 +557,7 @@ if status["combat"]["morale"] < 50:
         fleet_id="fleet_1",
         order_type=OrderType.CHANGE_FORMATION,
         parameters={"new_formation_id": "box_formation"},
-        priority=OrderPriority.CRITICAL
+        priority=OrderPriority.EMERGENCY
     )
 ```
 
