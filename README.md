@@ -136,6 +136,7 @@ contribute new documents.
 - [docs/README.md](docs/README.md) – Documentation index and contribution guidelines.
 - [docs/design_overview.md](docs/design_overview.md) – Summary of project goals and folder structure.
 - [docs/gameplay_guide.md](docs/gameplay_guide.md) – How to play: basic commands, UI overview, gameplay phases, and fleet movement details.
+- [docs/advanced_fleet_command.md](docs/advanced_fleet_command.md) – Comprehensive guide to the Advanced Fleet Command System, including formations, combat operations, and logistics management.
 - [docs/contributing.md](docs/contributing.md) – Developer contribution guide.
 - [docs/game_turns.md](docs/game_turns.md) – Overview of the turn and tick system.
 - [docs/streamlit_dashboard.md](docs/streamlit_dashboard.md) – How to launch the Streamlit dashboard.

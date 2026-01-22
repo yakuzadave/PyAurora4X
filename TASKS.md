@@ -17,23 +17,27 @@ Rule: Only pick next batch from unchecked tasks [ ]. Add new work here first (AN
 
 > Fill in the batch you are executing BEFORE doing work.
 
-### Batch ID: BATCH-003
+### Batch ID: BATCH-004 (Documentation & Testing Enhancement)
 
 **Batch Type:**
 
-- [ ] Initial Setup & Documentation
-- [ ] Code Implementation
+- [ ] Initial Setup & Documentation ✅ (Phase 1: Core System Guides)
+- [ ] Code Implementation (API Docstrings)
 - [ ] Testing & Validation
-- [x] Final Documentation & Quality Audit
+- [ ] Final Documentation & Quality Audit
 
 **Exit Criteria for this batch:**
 
-- [x] TASKS.md updated to reflect all PR decisions
-- [x] All tracking files reviewed and validated
-- [x] Documentation audit completed
-- [x] Quality gates verified
-- [x] Final STATUS.md update
-- [x] Project completion confirmed
+- [x] PLAN.md created with comprehensive roadmap
+- [ ] Fleet Command system has comprehensive docstrings
+- [ ] `docs/advanced_fleet_command.md` created with usage examples
+- [ ] Integration tests added for fleet command scenarios
+- [ ] Jump Point Exploration system has docstrings
+- [ ] `docs/jump_point_exploration.md` created
+- [ ] Tests added for exploration mission workflows
+- [ ] Documentation index updated with new guides
+- [ ] All code examples validated by tests
+- [ ] Progress reported and committed
 
 ---
 
@@ -186,6 +190,7 @@ Rule: Only pick next batch from unchecked tasks [ ]. Add new work here first (AN
 
 ## 10) Next Immediate Actions (Priority Order)
 
+### Completed from Previous Batches (BATCH-001 to BATCH-003)
 - [x] Create TASKS.md (this file)
 - [x] Create STATUS.md with initial project state
 - [x] Create IMPROVEMENTS_INVENTORY.md with all improvement items
@@ -196,6 +201,53 @@ Rule: Only pick next batch from unchecked tasks [ ]. Add new work here first (AN
 - [x] Complete batch and report progress
 - [x] Final documentation audit
 - [x] Project completion verification
+
+### New Work: BATCH-004 (Documentation & Testing Enhancement)
+
+#### Phase 1: Fleet Command Documentation
+- [x] Create PLAN.md with comprehensive roadmap
+- [ ] Add docstrings to `pyaurora4x/core/fleet_command.py`
+  - [ ] Document FleetOrder, Formation, CombatResolver classes
+  - [ ] Add method-level documentation with parameters and returns
+  - [ ] Include usage examples in docstrings
+- [ ] Add docstrings to `pyaurora4x/engine/fleet_command_manager.py`
+  - [ ] Document FleetCommandManager public API
+  - [ ] Explain order processing workflow
+  - [ ] Document logistics and combat systems
+- [ ] Create `docs/advanced_fleet_command.md`
+  - [ ] Formation mechanics section
+  - [ ] Order types and priorities
+  - [ ] Combat resolution workflow
+  - [ ] Logistics management
+  - [ ] Practical examples (3-5 scenarios)
+- [ ] Add tests for fleet command scenarios
+  - [ ] Formation setup and integrity tests
+  - [ ] Order processing integration tests
+  - [ ] Combat resolution edge cases
+  - [ ] Multi-fleet coordination tests
+
+#### Phase 2: Jump Point Exploration Documentation
+- [ ] Add docstrings to `pyaurora4x/engine/jump_point_exploration.py`
+  - [ ] Document JumpPointExplorationSystem
+  - [ ] Explain ExplorationMission workflow
+  - [ ] Document difficulty calculations
+- [ ] Create `docs/jump_point_exploration.md`
+  - [ ] Exploration mission mechanics
+  - [ ] Discovery algorithms
+  - [ ] Fleet requirements and risks
+  - [ ] Integration with jump travel
+  - [ ] Usage examples
+- [ ] Add tests for exploration missions
+  - [ ] Mission creation and execution
+  - [ ] Discovery probability tests
+  - [ ] Edge cases (failed missions, fleet destruction)
+
+#### Phase 3: Consolidation
+- [ ] Update `docs/README.md` index with new guides
+- [ ] Update main `README.md` to reference new documentation
+- [ ] Verify all code examples in documentation work
+- [ ] Run full test suite to ensure no regressions
+- [ ] Update STATUS.md with completion summary
 
 ---
 

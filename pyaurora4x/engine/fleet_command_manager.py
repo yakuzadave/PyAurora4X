@@ -40,7 +40,26 @@ class FleetCommandManager:
         self.formation_manager = FormationManager(self.formation_templates)
     
     def initialize_fleet_command(self, fleet: Fleet, empire: Empire) -> FleetCommandState:
-        """Initialize command state for a fleet."""
+        """Initialize command state for a fleet.
+        
+        Sets up the fleet's command structure, calculates combat capabilities,
+        logistics requirements, and prepares the fleet for receiving orders.
+        
+        Args:
+            fleet: The fleet to initialize command for
+            empire: The empire that owns the fleet
+            
+        Returns:
+            FleetCommandState: The initialized command state for the fleet
+            
+        Example:
+            ```python
+            manager = FleetCommandManager()
+            fleet = empire.get_fleet("fleet_1")
+            command_state = manager.initialize_fleet_command(fleet, empire)
+            print(f"Fleet {fleet.name} ready for command")
+            ```
+        """
         if fleet.id in self.fleet_command_states:
             return self.fleet_command_states[fleet.id]
         
@@ -63,7 +82,41 @@ class FleetCommandManager:
     
     def issue_order(self, fleet_id: str, order_type: OrderType, parameters: Dict[str, Any] = None,
                    priority: OrderPriority = OrderPriority.NORMAL, **kwargs) -> Tuple[bool, str]:
-        """Issue a new order to a fleet."""
+        """Issue a new order to a fleet.
+        
+        Creates, validates, and adds an order to the fleet's command queue. Orders are
+        automatically sorted by priority, with CRITICAL orders processing first.
+        
+        Args:
+            fleet_id: ID of the fleet to receive the order
+            order_type: Type of order (MOVE_TO, ATTACK, PATROL, etc.)
+            parameters: Dictionary of order-specific parameters
+            priority: Order priority (CRITICAL, HIGH, NORMAL, LOW)
+            **kwargs: Additional order fields (target_position, target_fleet_id, etc.)
+            
+        Returns:
+            Tuple[bool, str]: (success, message) indicating if order was accepted
+            
+        Example:
+            ```python
+            # Move fleet to a position
+            success, msg = manager.issue_order(
+                fleet_id="fleet_1",
+                order_type=OrderType.MOVE_TO,
+                parameters={"speed": 0.8},
+                target_position=Vector3D(x=1000, y=0, z=500),
+                priority=OrderPriority.HIGH
+            )
+            
+            # Attack enemy fleet
+            success, msg = manager.issue_order(
+                fleet_id="fleet_1",
+                order_type=OrderType.ATTACK,
+                target_fleet_id="enemy_fleet_1",
+                priority=OrderPriority.CRITICAL
+            )
+            ```
+        """
         if fleet_id not in self.fleet_command_states:
             return False, "Fleet command not initialized"
         
@@ -119,7 +172,28 @@ class FleetCommandManager:
         return True
     
     def process_fleet_orders(self, fleet: Fleet, empire: Empire, delta_seconds: float) -> None:
-        """Process all pending orders for a fleet."""
+        """Process all pending orders for a fleet during a game tick.
+        
+        Executes orders in priority order, checking preconditions and updating order
+        status. Completed orders are removed from the queue, failed orders are logged,
+        and repeating orders are re-queued.
+        
+        Args:
+            fleet: The fleet whose orders to process
+            empire: The empire that owns the fleet
+            delta_seconds: Time elapsed since last processing (for progress calculation)
+            
+        Note:
+            This method is called every game tick by the simulation engine. Orders with
+            unmet preconditions are skipped but remain in the queue.
+            
+        Example:
+            ```python
+            # Called by game loop
+            for fleet in empire.fleets:
+                manager.process_fleet_orders(fleet, empire, delta_seconds=1.0)
+            ```
+        """
         if fleet.id not in self.fleet_command_states:
             return
         
@@ -154,7 +228,35 @@ class FleetCommandManager:
                         )
     
     def set_fleet_formation(self, fleet_id: str, formation_template_id: str) -> Tuple[bool, str]:
-        """Set a formation for a fleet."""
+        """Set a formation template for a fleet.
+        
+        Assigns a formation template to the fleet and begins the formation process.
+        Ships will move to their assigned positions based on the template's configuration.
+        
+        Args:
+            fleet_id: ID of the fleet to form up
+            formation_template_id: ID of the formation template to use
+            
+        Returns:
+            Tuple[bool, str]: (success, message) indicating if formation was set
+            
+        Note:
+            Formation bonuses (speed, detection, combat effectiveness) are applied once
+            the fleet reaches minimum formation integrity (typically 0.7 or 70%).
+            
+        Example:
+            ```python
+            # Set fleet to line formation
+            success, msg = manager.set_fleet_formation(
+                fleet_id="fleet_1",
+                formation_template_id="line_formation"
+            )
+            
+            # Formation bonuses apply when integrity reaches threshold
+            status = manager.get_fleet_tactical_status("fleet_1")
+            print(f"Formation integrity: {status['formation_integrity']:.1%}")
+            ```
+        """
         if fleet_id not in self.fleet_command_states:
             return False, "Fleet command not initialized"
         
@@ -185,7 +287,36 @@ class FleetCommandManager:
     
     def start_combat_engagement(self, attacking_fleet_ids: List[str], defending_fleet_ids: List[str],
                               system_id: str) -> str:
-        """Start a combat engagement between fleets."""
+        """Start a combat engagement between fleets.
+        
+        Initiates combat between attacking and defending fleets, creating a CombatEngagement
+        that will be processed each tick until combat concludes.
+        
+        Args:
+            attacking_fleet_ids: List of fleet IDs for the attacking side
+            defending_fleet_ids: List of fleet IDs for the defending side
+            system_id: ID of the star system where combat takes place
+            
+        Returns:
+            str: The engagement ID for tracking this combat
+            
+        Note:
+            Combat is resolved over multiple ticks using the CombatResolver.
+            Fleets gain experience based on combat participation and outcomes.
+            
+        Example:
+            ```python
+            # Initiate attack on enemy fleet
+            engagement_id = manager.start_combat_engagement(
+                attacking_fleet_ids=["player_fleet_1", "player_fleet_2"],
+                defending_fleet_ids=["enemy_fleet_1"],
+                system_id="sol_system"
+            )
+            
+            # Combat processes automatically each tick
+            # Check status with get_fleet_tactical_status()
+            ```
+        """
         engagement = CombatEngagement(
             attacking_fleets=attacking_fleet_ids,
             defending_fleets=defending_fleet_ids,
@@ -237,7 +368,40 @@ class FleetCommandManager:
             self.formation_manager.update_formation(fleet, formation_state, template, delta_seconds)
     
     def get_fleet_tactical_status(self, fleet_id: str) -> Dict[str, Any]:
-        """Get comprehensive tactical status for a fleet."""
+        """Get comprehensive tactical status for a fleet.
+        
+        Returns detailed information about the fleet's current command state, including
+        formation status, combat readiness, logistics, and mission performance metrics.
+        
+        Args:
+            fleet_id: ID of the fleet to query
+            
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - command_effectiveness: How well the fleet executes orders (0.0-1.0)
+                - current_orders: Number of active orders
+                - pending_orders: Number of orders in queue
+                - formation: Formation status (active, integrity, cohesion)
+                - combat: Combat readiness (rating, experience, morale)
+                - logistics: Supply status (fuel, supplies, maintenance)
+                - performance: Mission success rate and total missions completed
+                
+        Example:
+            ```python
+            status = manager.get_fleet_tactical_status("fleet_1")
+            
+            if status["formation"]["active"]:
+                integrity = status["formation"]["integrity"]
+                print(f"Formation integrity: {integrity:.1%}")
+                
+            if status["combat"]["in_combat"]:
+                print("Fleet is engaged in combat!")
+                
+            fuel_pct = status["logistics"]["fuel_status"]
+            if fuel_pct < 0.2:
+                print("Warning: Low fuel!")
+            ```
+        """
         if fleet_id not in self.fleet_command_states:
             return {"error": "Fleet command not initialized"}
         

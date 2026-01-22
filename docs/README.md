@@ -10,6 +10,7 @@ for documentation and as a guide when adding new files.
 - [Documentation Overview](README.md)
 - [Design Overview](design_overview.md)
 - [Gameplay Guide](gameplay_guide.md) – Basic commands, UI overview, and gameplay phases. Lists keyboard shortcuts like the `F1`–`F5` fleet focus keys.
+- [Advanced Fleet Command](advanced_fleet_command.md) – Comprehensive guide to the fleet command system, formations, combat operations, and logistics management.
 - [Contribution Guide](contributing.md)
 - [Game Turns](game_turns.md) – Explanation of the turn/tick system.
 - [Streamlit Dashboard](streamlit_dashboard.md) – Launch a Streamlit dashboard to inspect game data.
