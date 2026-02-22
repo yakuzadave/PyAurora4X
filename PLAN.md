@@ -274,19 +274,30 @@ This document outlines a systematic plan to enhance PyAurora4X's documentation a
 
 ---
 
-## Current Focus: Fleet Command & Jump Point Exploration
+## Current Focus: Ship Mechanics Expansion (User Request)
 
-Based on system complexity and user need, the immediate priorities are:
+Based on user feedback to "expand on the ship mechanics", the immediate priorities are:
 
 ### Next Steps (in order):
 1. ✅ Create PLAN.md (this document)
-2. [ ] Add comprehensive docstrings to fleet command system
-3. [ ] Create `docs/advanced_fleet_command.md` with usage examples
-4. [ ] Add tests for complex fleet command scenarios
-5. [ ] Add docstrings to jump point exploration system
-6. [ ] Create `docs/jump_point_exploration.md`
-7. [ ] Add tests for exploration mission workflows
-8. [ ] Update documentation index and cross-references
+2. ✅ Add comprehensive docstrings to fleet command system
+3. ✅ Create `docs/advanced_fleet_command.md` with usage examples
+4. ✅ Add tests for complex fleet command scenarios
+5. **[ ] Ship Mechanics Documentation (NEW - Current Priority)**
+   - [ ] Create `docs/ship_mechanics.md` comprehensive guide
+   - [ ] Document ship component system with attributes
+   - [ ] Document combat damage resolution
+   - [ ] Document shipyard build point mechanics
+   - [ ] Document refit system
+   - [ ] Document ship condition and repair
+   - [ ] Document fuel and logistics
+   - [ ] Add practical examples for each system
+6. [ ] Add docstrings to ship-related classes and methods
+7. [ ] Create integration tests for ship mechanics
+8. [ ] Add docstrings to jump point exploration system
+9. [ ] Create `docs/jump_point_exploration.md`
+10. [ ] Add tests for exploration mission workflows
+11. [ ] Update documentation index and cross-references
 
 ---
 
