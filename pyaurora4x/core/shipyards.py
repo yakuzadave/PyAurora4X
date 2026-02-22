@@ -74,16 +74,74 @@ class Shipyard(BaseModel):
     refit_queue: List[RefitOrder] = Field(default_factory=list)
 
     def effective_bp_per_day(self) -> float:
+        """Calculate effective Build Points per day including tooling bonus.
+        
+        Returns:
+            float: Effective BP/day (base_bp_per_day × tooling_bonus)
+            
+        Example:
+            ```python
+            shipyard.bp_per_day = 1000.0
+            shipyard.tooling_bonus = 1.5
+            effective_bp = shipyard.effective_bp_per_day()  # 1500.0
+            ```
+        """
         return max(0.0, self.bp_per_day * self.tooling_bonus)
 
     def available_slipway(self, tonnage: int) -> Optional[Slipway]:
+        """Find first available slipway that can accommodate the specified tonnage.
+        
+        Args:
+            tonnage: Required hull tonnage capacity
+            
+        Returns:
+            Optional[Slipway]: Available slipway or None if none suitable
+            
+        Example:
+            ```python
+            slipway = shipyard.available_slipway(tonnage=5000)
+            if slipway:
+                print(f"Using slipway {slipway.id} (capacity: {slipway.max_hull_tonnage})")
+            else:
+                print("No available slipways for this ship size")
+            ```
+        """
         for s in self.slipways:
             if s.active_order_id is None and s.max_hull_tonnage >= tonnage:
                 return s
         return None
     
     def upgrade_tooling(self, cost_multiplier: float = 2.0) -> Dict[str, Any]:
-        """Calculate cost and time to upgrade yard tooling."""
+        """Calculate cost and time to upgrade shipyard tooling efficiency.
+        
+        Tooling upgrades improve BP generation by 10% per upgrade, up to 200% maximum.
+        Cost scales quadratically with current tooling level.
+        
+        Args:
+            cost_multiplier: Multiplier for upgrade cost (default: 2.0)
+            
+        Returns:
+            Dict[str, Any]: Upgrade information containing:
+                - feasible: bool - Whether upgrade is possible
+                - current_bonus: float - Current tooling bonus
+                - new_bonus: float - Bonus after upgrade
+                - cost_bp: float - Total BP cost for upgrade
+                - time_days: float - Time to complete upgrade
+                - efficiency_gain: float - Percentage improvement
+                
+        Example:
+            ```python
+            info = shipyard.upgrade_tooling()
+            
+            if info["feasible"]:
+                print(f"Cost: {info['cost_bp']:,.0f} BP")
+                print(f"Time: {info['time_days']:.1f} days")
+                print(f"Efficiency gain: {info['efficiency_gain']:.1f}%")
+                print(f"New BP/day: {shipyard.bp_per_day * info['new_bonus']:.0f}")
+            else:
+                print(info["reason"])
+            ```
+        """
         current_bonus = self.tooling_bonus
         new_bonus = min(current_bonus + 0.1, 2.0)  # Cap at 200% efficiency
         
@@ -122,7 +180,36 @@ class Shipyard(BaseModel):
         }
     
     def retool_for_design(self, design_id: str, retool_cost_multiplier: float = 0.25) -> Dict[str, Any]:
-        """Calculate cost and time to retool yard for a specific design."""
+        """Calculate cost and time to retool shipyard for a specific ship design.
+        
+        Retooling optimizes the yard for building a particular design, providing
+        efficiency bonuses but requiring downtime and resources.
+        
+        Args:
+            design_id: ID of the ship design to retool for
+            retool_cost_multiplier: Cost as fraction of 30 days production (default: 0.25)
+            
+        Returns:
+            Dict[str, Any]: Retooling information containing:
+                - feasible: bool - Whether retooling is possible
+                - design_id: str - Target design
+                - retool_cost: float - Total BP cost
+                - retool_time_days: float - Downtime required
+                - new_tooling_bonus: float - Bonus for target design
+                
+        Example:
+            ```python
+            info = shipyard.retool_for_design("battleship_mk2")
+            
+            if info["feasible"]:
+                print(f"Retool cost: {info['retool_cost']:,.0f} BP")
+                print(f"Downtime: {info['retool_time_days']:.1f} days")
+                print(f"Bonus for {design_id}: {info['new_tooling_bonus']:.1%}")
+            ```
+            
+        Note:
+            Retooling is cost-effective when building 3+ ships of the same design.
+        """
         # Retooling provides bonus for specific design but reduces general efficiency
         retool_cost = self.bp_per_day * 30 * retool_cost_multiplier  # 30 days of production
         

@@ -32,7 +32,41 @@ class ShipyardManager(BaseModel):
                     order.assigned_slipway_id = slip.id
 
     def tick(self, days: float, now: float, event_manager: Optional[object] = None) -> List[dict]:
-        """Advance all yards by a number of days; return completion events."""
+        """Advance all shipyards by a number of days and process build/refit orders.
+        
+        Distributes available Build Points (BP) across active orders in each yard,
+        completes finished orders, and generates completion events.
+        
+        Args:
+            days: Number of in-game days to advance
+            now: Current simulation time (for event timestamps)
+            event_manager: Optional EventManager for posting completion events
+            
+        Returns:
+            List[dict]: Completion events for finished orders, each containing:
+                - yard_id: ID of the shipyard
+                - order_id: ID of completed order
+                - type: "BuildOrder" or "RefitOrder"
+                - time: Completion timestamp
+                
+        Note:
+            BP is distributed round-robin among active orders. Orders with assigned
+            slipways receive equal shares of the yard's daily BP capacity.
+            
+        Example:
+            ```python
+            manager = ShipyardManager()
+            
+            # Process 1 game day
+            completed = manager.tick(days=1.0, now=game_time, event_manager=events)
+            
+            for event in completed:
+                if event["type"] == "BuildOrder":
+                    print(f"Ship completed at yard {event['yard_id']}")
+                elif event["type"] == "RefitOrder":
+                    print(f"Refit completed at yard {event['yard_id']}")
+            ```
+        """
         self.assign_orders()
         completed: List[dict] = []
         for yard in self.yards.values():
