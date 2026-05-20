@@ -8,11 +8,12 @@ selected object details along the bottom.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import hashlib
 import math
 import random
-from typing import Any
+from typing import Any, Protocol
 
 from rich.markup import escape
 from textual.app import App, ComposeResult
@@ -20,11 +21,93 @@ from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Static
 
-from pyaurora4x.core.models import AsteroidBelt, Fleet, Planet, StarSystem
+from pyaurora4x.core.models import AsteroidBelt, Fleet, Planet, StarSystem, Vector3D
 from pyaurora4x.data.save_manager import SaveManager
 from pyaurora4x.engine.simulation import GameSimulation
 
 AU_IN_KM = 149_597_870.7
+FocusableBody = StarSystem | Planet | AsteroidBelt | Fleet
+
+
+class EmpireDisplay(Protocol):
+    """Read-only empire surface needed by the command dashboard."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def resources(self) -> Mapping[str, float]: ...
+
+    @property
+    def income(self) -> Mapping[str, float]: ...
+
+    @property
+    def colonies(self) -> Sequence[str]: ...
+
+    @property
+    def fleets(self) -> Sequence[str]: ...
+
+    @property
+    def government_type(self) -> str: ...
+
+    @property
+    def culture(self) -> str: ...
+
+    @property
+    def research_points(self) -> float: ...
+
+
+class ColonyDisplay(Protocol):
+    """Read-only colony surface needed by the command dashboard."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def construction_queue(self) -> Sequence[str]: ...
+
+    @property
+    def production(self) -> Mapping[str, float]: ...
+
+    @property
+    def population(self) -> int: ...
+
+    @property
+    def power_generation(self) -> float: ...
+
+    @property
+    def power_consumption(self) -> float: ...
+
+    @property
+    def efficiency(self) -> float: ...
+
+
+class SimulationDisplay(Protocol):
+    """Read-only simulation surface consumed by display helpers."""
+
+    @property
+    def current_time(self) -> float: ...
+
+    @property
+    def is_paused(self) -> bool: ...
+
+    @property
+    def star_systems(self) -> Mapping[str, StarSystem]: ...
+
+    @property
+    def fleets(self) -> Mapping[str, Fleet]: ...
+
+    def get_player_empire(self) -> EmpireDisplay | None: ...
+
+    def get_colony(self, colony_id: str) -> ColonyDisplay | None: ...
+
+    def get_fleet(self, fleet_id: str) -> Fleet | None: ...
 
 
 @dataclass(slots=True)
@@ -33,7 +116,7 @@ class FocusItem:
 
     kind: str
     label: str
-    body: Any
+    body: FocusableBody
     glyph: str
     color: str
 
@@ -49,9 +132,10 @@ class ResourceRow:
     color: str
 
 
-def _enum_value(value: Any) -> str:
+def _enum_value(value: object) -> str:
     """Return a clean display value for enums and plain strings."""
-    return str(getattr(value, "value", value))
+    enum_value = getattr(value, "value", value)
+    return str(enum_value)
 
 
 def _format_number(value: float) -> str:
@@ -97,7 +181,7 @@ def _system_coord(system: StarSystem | None) -> str:
     return f"SY-{digest[:4]} C{digest[4:7]}"
 
 
-def _player_empire(simulation: GameSimulation) -> Any | None:
+def _player_empire(simulation: SimulationDisplay) -> EmpireDisplay | None:
     """Return the player empire, tolerating partially initialized simulations."""
     try:
         return simulation.get_player_empire()
@@ -105,13 +189,13 @@ def _player_empire(simulation: GameSimulation) -> Any | None:
         return None
 
 
-def _player_colonies(simulation: GameSimulation) -> list[Any]:
+def _player_colonies(simulation: SimulationDisplay) -> list[ColonyDisplay]:
     """Return colonies controlled by the player empire."""
     empire = _player_empire(simulation)
     if empire is None:
         return []
 
-    colonies: list[Any] = []
+    colonies: list[ColonyDisplay] = []
     for colony_id in empire.colonies:
         colony = simulation.get_colony(colony_id)
         if colony is not None:
@@ -119,7 +203,7 @@ def _player_colonies(simulation: GameSimulation) -> list[Any]:
     return colonies
 
 
-def _resource_rows(simulation: GameSimulation) -> list[ResourceRow]:
+def _resource_rows(simulation: SimulationDisplay) -> list[ResourceRow]:
     """Build display rows from empire resources, income, and colony production."""
     empire = _player_empire(simulation)
     colonies = _player_colonies(simulation)
@@ -156,7 +240,7 @@ def _resource_rows(simulation: GameSimulation) -> list[ResourceRow]:
     return rows
 
 
-def _current_systems(simulation: GameSimulation) -> list[StarSystem]:
+def _current_systems(simulation: SimulationDisplay) -> list[StarSystem]:
     """Return star systems in a stable order."""
     return sorted(simulation.star_systems.values(), key=lambda system: system.name)
 
@@ -173,7 +257,7 @@ def _planet_style(planet: Planet) -> tuple[str, str]:
     return "P", "magenta"
 
 
-def _focus_items(system: StarSystem | None, fleets: list[Fleet]) -> list[FocusItem]:
+def _focus_items(system: StarSystem | None, fleets: Sequence[Fleet]) -> list[FocusItem]:
     """Create the selectable object list for the current system."""
     if system is None:
         return []
@@ -194,7 +278,7 @@ def _focus_items(system: StarSystem | None, fleets: list[Fleet]) -> list[FocusIt
     return items
 
 
-def _system_fleets(simulation: GameSimulation, system: StarSystem | None) -> list[Fleet]:
+def _system_fleets(simulation: SimulationDisplay, system: StarSystem | None) -> list[Fleet]:
     """Return fleets currently located in a star system."""
     if system is None:
         return []
@@ -206,10 +290,19 @@ def _safe_percent(value: float) -> str:
     return f"{value:.0f}%"
 
 
+def _position_to_au(position: Vector3D) -> tuple[float, float]:
+    """Convert a model-space position from kilometers to AU."""
+    return position.x / AU_IN_KM, position.y / AU_IN_KM
+
+
 class CommandTopBar(Static):
     """Top status strip."""
 
-    def update_from_simulation(self, simulation: GameSimulation, system: StarSystem | None) -> None:
+    def update_from_simulation(
+        self,
+        simulation: SimulationDisplay,
+        system: StarSystem | None,
+    ) -> None:
         empire = _player_empire(simulation)
         colonies = _player_colonies(simulation)
         status = "paused" if simulation.is_paused else "running"
@@ -234,7 +327,7 @@ class CommandTopBar(Static):
 class CommandResourcePanel(Static):
     """Left resource and asset panel."""
 
-    def update_from_simulation(self, simulation: GameSimulation) -> None:
+    def update_from_simulation(self, simulation: SimulationDisplay) -> None:
         empire = _player_empire(simulation)
         colonies = _player_colonies(simulation)
         rows = _resource_rows(simulation)
@@ -312,7 +405,7 @@ class CommandFilterBar(Static):
 
     def update_from_simulation(
         self,
-        simulation: GameSimulation,
+        simulation: SimulationDisplay,
         system: StarSystem | None,
         focus_index: int,
         focus_count: int,
@@ -320,9 +413,9 @@ class CommandFilterBar(Static):
         system_label = escape(system.name) if system else "No System"
         self.update(
             "[bold magenta]STAR MAP[/]\n"
-            f"[N] Next System  [B] Back System  [Up/Down] Select Object  "
-            f"[A] Advance 30s  [Y] Advance 1y  [Space] Pause  [S] Save\n"
-            f"[F] Faction: All  [C] Culture: All  [T] Alignment: All  "
+            "[N] Next System  [B] Back System  [Up/Down] Select Object  "
+            "[A] Advance 30s  [Y] Advance 1y  [Space] Pause  [S] Save\n"
+            "[F] Faction: All  [C] Culture: All  [T] Alignment: All  "
             f"System: {system_label}  Object: {focus_index + 1}/{max(focus_count, 1)}"
         )
 
@@ -335,7 +428,7 @@ class CommandStarMap(Static):
 
     def update_from_simulation(
         self,
-        simulation: GameSimulation,
+        simulation: SimulationDisplay,
         system: StarSystem | None,
         selected: FocusItem | None,
     ) -> None:
@@ -377,10 +470,11 @@ class CommandStarMap(Static):
         def project_au(x_au: float, y_au: float) -> tuple[int, int]:
             return int(center_x + x_au * x_scale), int(center_y + y_au * y_scale * 0.55)
 
-        def object_position(body: Any, fallback_angle: float, distance_au: float) -> tuple[int, int]:
+        def object_position(body: FocusableBody, fallback_angle: float, distance_au: float) -> tuple[int, int]:
             position = getattr(body, "position", None)
-            if position is not None and getattr(position, "magnitude", lambda: 0.0)() > 0:
-                return project_au(position.x / AU_IN_KM, position.y / AU_IN_KM)
+            if isinstance(position, Vector3D) and position.magnitude() > 0:
+                x_au, y_au = _position_to_au(position)
+                return project_au(x_au, y_au)
             return project_au(math.cos(fallback_angle) * distance_au, math.sin(fallback_angle) * distance_au)
 
         for planet in system.planets:
@@ -420,7 +514,7 @@ class CommandStarMap(Static):
             put(x, y, "F", color, selected_body is fleet)
 
         for item in focus_items:
-            if item.kind != "belt":
+            if item.kind != "belt" or not isinstance(item.body, AsteroidBelt):
                 continue
             belt = item.body
             x, y = project_au(belt.distance, 0.0)
@@ -446,7 +540,7 @@ class CommandDetailPanel(Static):
 
     def update_from_simulation(
         self,
-        simulation: GameSimulation,
+        simulation: SimulationDisplay,
         system: StarSystem | None,
         selected: FocusItem | None,
     ) -> None:
@@ -457,53 +551,53 @@ class CommandDetailPanel(Static):
         body = selected.body
         header = f"[bold magenta]SELECTED[/] {escape(selected.kind.upper())}: [{selected.color}]{escape(selected.label)}[/]"
 
-        if selected.kind == "star":
+        if selected.kind == "star" and isinstance(body, StarSystem):
             text = (
                 f"{header}\n"
                 f"Coord     : {_system_coord(system)}\n"
-                f"Type      : Star System\n"
+                "Type      : Star System\n"
                 f"Star      : {_enum_value(system.star_type)} | Mass {system.star_mass:.2f} M☉ | Lum {system.star_luminosity:.2f} L☉\n"
                 f"Bodies    : {len(system.planets)} planets | {len(system.asteroid_belts)} belts | {len(system.jump_points)} jump points\n"
                 f"Hab Zone  : {system.habitable_zone_inner:.2f} AU to {system.habitable_zone_outer:.2f} AU"
             )
-        elif selected.kind == "planet":
-            planet: Planet = body
+        elif selected.kind == "planet" and isinstance(body, Planet):
             colony_line = "none"
-            if planet.colony_id:
-                colony = simulation.get_colony(planet.colony_id)
+            if body.colony_id:
+                colony = simulation.get_colony(body.colony_id)
                 if colony:
-                    colony_line = f"{colony.name} | Pop {_format_number(float(colony.population))} | Eff {_safe_percent(colony.efficiency * 100)}"
+                    colony_line = (
+                        f"{colony.name} | Pop {_format_number(float(colony.population))} | "
+                        f"Eff {_safe_percent(colony.efficiency * 100)}"
+                    )
             resources = ", ".join(
                 f"{name}:{_format_number(float(value))}"
-                for name, value in planet.mineral_resources.items()
+                for name, value in body.mineral_resources.items()
             ) or "unknown"
             text = (
                 f"{header}\n"
-                f"Coord     : {_system_coord(system)} / Orbit {planet.orbital_distance:.2f} AU\n"
-                f"Type      : {_enum_value(planet.planet_type)} | Grav {planet.gravity:.2f}g | Temp {planet.surface_temperature:.0f}K\n"
-                f"Hab       : {_safe_percent(planet.habitability)} | Surveyed: {planet.is_surveyed}\n"
+                f"Coord     : {_system_coord(system)} / Orbit {body.orbital_distance:.2f} AU\n"
+                f"Type      : {_enum_value(body.planet_type)} | Grav {body.gravity:.2f}g | Temp {body.surface_temperature:.0f}K\n"
+                f"Hab       : {_safe_percent(body.habitability)} | Surveyed: {body.is_surveyed}\n"
                 f"Colony    : {escape(colony_line)}\n"
                 f"Resources : {escape(resources)}"
             )
-        elif selected.kind == "fleet":
-            fleet: Fleet = body
+        elif selected.kind == "fleet" and isinstance(body, Fleet):
             text = (
                 f"{header}\n"
                 f"Coord     : {_system_coord(system)}\n"
-                f"Status    : {_enum_value(fleet.status)} | Ships {len(fleet.ships)} | Fuel {_safe_percent(fleet.fuel_remaining)}\n"
-                f"Mass      : {_format_number(fleet.total_mass)} | Max Speed {_format_number(fleet.max_speed)}\n"
-                f"Orders    : {escape(', '.join(fleet.current_orders) if fleet.current_orders else 'none')}\n"
-                f"ETA       : {_format_duration(fleet.estimated_arrival or -1)}"
+                f"Status    : {_enum_value(body.status)} | Ships {len(body.ships)} | Fuel {_safe_percent(body.fuel_remaining)}\n"
+                f"Mass      : {_format_number(body.total_mass)} | Max Speed {_format_number(body.max_speed)}\n"
+                f"Orders    : {escape(', '.join(body.current_orders) if body.current_orders else 'none')}\n"
+                f"ETA       : {_format_duration(body.estimated_arrival or -1)}"
             )
-        elif selected.kind == "belt":
-            belt: AsteroidBelt = body
+        elif selected.kind == "belt" and isinstance(body, AsteroidBelt):
             text = (
                 f"{header}\n"
-                f"Coord     : {_system_coord(system)} / Radius {belt.distance:.2f} AU\n"
-                f"Type      : Asteroid Belt\n"
-                f"Width     : {belt.width:.2f} AU\n"
-                f"Signal    : probable minerals and volatiles\n"
-                f"Orders    : survey, prospect, patrol"
+                f"Coord     : {_system_coord(system)} / Radius {body.distance:.2f} AU\n"
+                "Type      : Asteroid Belt\n"
+                f"Width     : {body.width:.2f} AU\n"
+                "Signal    : probable minerals and volatiles\n"
+                "Orders    : survey, prospect, patrol"
             )
         else:
             text = f"{header}\n[dim]No detail renderer for this object type.[/]"
@@ -514,7 +608,7 @@ class CommandDetailPanel(Static):
 class CommandOptionsPanel(Static):
     """Right command/options panel."""
 
-    def update_from_simulation(self, simulation: GameSimulation, system: StarSystem | None) -> None:
+    def update_from_simulation(self, simulation: SimulationDisplay, system: StarSystem | None) -> None:
         system_name = escape(system.name) if system else "No System"
         self.update(
             "[bold magenta]OPTIONS[/]\n\n"
@@ -549,7 +643,7 @@ class CommandOptionsPanel(Static):
 class CommandBottomBar(Static):
     """Bottom ledger/status strip."""
 
-    def update_from_simulation(self, simulation: GameSimulation) -> None:
+    def update_from_simulation(self, simulation: SimulationDisplay) -> None:
         rows = _resource_rows(simulation)
         totals = " | ".join(
             f"[{row.color}]{escape(row.name[:3])} {_format_number(row.amount)}[/]"
@@ -582,7 +676,7 @@ class CommandDashboard(Container):
 
     def update_from_simulation(
         self,
-        simulation: GameSimulation,
+        simulation: SimulationDisplay,
         system: StarSystem | None,
         selected: FocusItem | None,
         focus_index: int,
