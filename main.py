@@ -21,30 +21,30 @@ from pyaurora4x.data.save_manager import SaveManager
 def run_simulation_test():
     """Run a headless simulation test for debugging."""
     print("Running headless simulation test...")
-    
+
     # Create a new game simulation
     sim = GameSimulation()
     sim.initialize_new_game()
-    
+
     # Print initial state
     print(f"Game Time: {sim.current_time}")
     print(f"Star Systems: {len(sim.star_systems)}")
-    
+
     for system_id, system in sim.star_systems.items():
         print(f"  System {system.name}: {len(system.planets)} planets")
         for planet in system.planets:
             print(f"    {planet.name}: {planet.planet_type}")
-    
+
     print(f"Empires: {len(sim.empires)}")
     for empire_id, empire in sim.empires.items():
         print(f"  {empire.name}: {len(empire.fleets)} fleets")
-    
+
     # Advance time a few steps
     print("\nAdvancing time...")
     for i in range(5):
         sim.advance_time(30)  # 30 seconds per step
-        print(f"Step {i+1}: Game Time = {sim.current_time}")
-    
+        print(f"Step {i + 1}: Game Time = {sim.current_time}")
+
     print("Simulation test completed successfully!")
 
 
@@ -54,45 +54,56 @@ def main():
         description="PyAurora 4X - Terminal-based 4X space strategy game"
     )
     parser.add_argument(
-        "--test", 
-        action="store_true", 
-        help="Run headless simulation test"
+        "--test",
+        action="store_true",
+        help="Run headless simulation test",
     )
     parser.add_argument(
-        "--load", 
-        type=str, 
-        help="Load a saved game file"
+        "--load",
+        type=str,
+        help="Load a saved game file",
     )
     parser.add_argument(
         "--new-game",
         action="store_true",
-        help="Start a new game (default)"
+        help="Start a new game (default)",
     )
     parser.add_argument(
         "--systems",
         type=int,
         default=3,
-        help="Number of star systems"
+        help="Number of star systems",
     )
     parser.add_argument(
         "--empires",
         type=int,
         default=2,
-        help="Total empires (including player)"
+        help="Total empires (including player)",
     )
-    
+    parser.add_argument(
+        "--command-ui",
+        action="store_true",
+        help="Launch the dense command-line dashboard interface",
+    )
+
     args = parser.parse_args()
-    
+
     if args.test:
         run_simulation_test()
         return
-    
-    # Run the main Textual application
-    app = PyAurora4XApp(
+
+    app_class = PyAurora4XApp
+    if args.command_ui:
+        from pyaurora4x.ui.command_app import PyAuroraCommandApp
+
+        app_class = PyAuroraCommandApp
+
+    # Run the selected Textual application
+    app = app_class(
         new_game_systems=args.systems,
         new_game_empires=args.empires,
     )
-    
+
     if args.load and not args.new_game:
         # Set load parameters for the app to handle after initialization
         save_manager = SaveManager()
@@ -104,7 +115,7 @@ def main():
         except Exception as e:
             print(f"Error loading game: {e}")
             return
-    
+
     # Run the application (initialization happens in on_ready)
     app.run()
 
